@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../../styles.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>/*<a name="line.1"></a>
+<span class="sourceLineNo">002</span> * (C) Copyright 2011 - MFG &lt;http://www.marketforecastgroup.com/&gt;<a name="line.2"></a>
+<span class="sourceLineNo">003</span> * All rights reserved. This program and the accompanying materials<a name="line.3"></a>
+<span class="sourceLineNo">004</span> * are proprietary to Giulio Rugarli.<a name="line.4"></a>
+<span class="sourceLineNo">005</span> * <a name="line.5"></a>
+<span class="sourceLineNo">006</span> * @author &lt;a href="mailto:boniatillo@gmail.com"&gt;Arian Fornaris&lt;/a&gt;, MFG<a name="line.6"></a>
+<span class="sourceLineNo">007</span> * <a name="line.7"></a>
+<span class="sourceLineNo">008</span> * @version $Revision$: $Date$:<a name="line.8"></a>
+<span class="sourceLineNo">009</span> * $Id$:<a name="line.9"></a>
+<span class="sourceLineNo">010</span> */<a name="line.10"></a>
+<span class="sourceLineNo">011</span>package org.mfg.mdb.runtime;<a name="line.11"></a>
+<span class="sourceLineNo">012</span><a name="line.12"></a>
+<span class="sourceLineNo">013</span>/**<a name="line.13"></a>
+<span class="sourceLineNo">014</span> * The different session modes.<a name="line.14"></a>
+<span class="sourceLineNo">015</span> * <a name="line.15"></a>
+<span class="sourceLineNo">016</span> * @author arian<a name="line.16"></a>
+<span class="sourceLineNo">017</span> * <a name="line.17"></a>
+<span class="sourceLineNo">018</span> */<a name="line.18"></a>
+<span class="sourceLineNo">019</span>public enum SessionMode {<a name="line.19"></a>
+<span class="sourceLineNo">020</span><a name="line.20"></a>
+<span class="sourceLineNo">021</span>        /**<a name="line.21"></a>
+<span class="sourceLineNo">022</span>         * Only read operations are permitted. Cursors performs in the same way of<a name="line.22"></a>
+<span class="sourceLineNo">023</span>         * the {@link SessionMode#BASIC_READ_WRITE} mode.<a name="line.23"></a>
+<span class="sourceLineNo">024</span>         */<a name="line.24"></a>
+<span class="sourceLineNo">025</span>        READ_ONLY(true),<a name="line.25"></a>
+<span class="sourceLineNo">026</span><a name="line.26"></a>
+<span class="sourceLineNo">027</span>        /**<a name="line.27"></a>
+<span class="sourceLineNo">028</span>         * Default mode, allow read and write operations. If the database does not<a name="line.28"></a>
+<span class="sourceLineNo">029</span>         * exist, a new one is created. This is the default mode.<a name="line.29"></a>
+<span class="sourceLineNo">030</span>         */<a name="line.30"></a>
+<span class="sourceLineNo">031</span>        READ_WRITE(false),<a name="line.31"></a>
+<span class="sourceLineNo">032</span><a name="line.32"></a>
+<span class="sourceLineNo">033</span>        /**<a name="line.33"></a>
+<span class="sourceLineNo">034</span>         * &lt;p&gt;<a name="line.34"></a>
+<span class="sourceLineNo">035</span>         * The purpose of this mode is to improve performance with simpler readers<a name="line.35"></a>
+<span class="sourceLineNo">036</span>         * and writers. Here, the last records are not shared between writers and<a name="line.36"></a>
+<span class="sourceLineNo">037</span>         * readers unless they are written to disk (via the &lt;code&gt;close()&lt;/code&gt; and<a name="line.37"></a>
+<span class="sourceLineNo">038</span>         * &lt;code&gt;flush()&lt;/code&gt; appender's methods), therefore, there is not an<a name="line.38"></a>
+<span class="sourceLineNo">039</span>         * extra effort to synchronize threads and keep a memory collection.<a name="line.39"></a>
+<span class="sourceLineNo">040</span>         * &lt;p&gt;<a name="line.40"></a>
+<span class="sourceLineNo">041</span>         * The advantage of this method is that cursors and appenders do not spent<a name="line.41"></a>
+<span class="sourceLineNo">042</span>         * time and memory synchronizing threads and keeping a memory collection<a name="line.42"></a>
+<span class="sourceLineNo">043</span>         * with the last records. Common scenarios are write-only or read-only<a name="line.43"></a>
+<span class="sourceLineNo">044</span>         * databases. Actually, case of the read-only database (<a name="line.44"></a>
+<span class="sourceLineNo">045</span>         * {@link SessionMode#READ_ONLY}), the readers will perform in the same way<a name="line.45"></a>
+<span class="sourceLineNo">046</span>         * of this mode.<a name="line.46"></a>
+<span class="sourceLineNo">047</span>         * &lt;/p&gt;<a name="line.47"></a>
+<span class="sourceLineNo">048</span>         */<a name="line.48"></a>
+<span class="sourceLineNo">049</span>        BASIC_READ_WRITE(true),<a name="line.49"></a>
+<span class="sourceLineNo">050</span><a name="line.50"></a>
+<span class="sourceLineNo">051</span>        /**<a name="line.51"></a>
+<span class="sourceLineNo">052</span>         * The whole data is saved in RAM memory, so, when the Java process of your<a name="line.52"></a>
+<span class="sourceLineNo">053</span>         * program stops, the data is lost.<a name="line.53"></a>
+<span class="sourceLineNo">054</span>         */<a name="line.54"></a>
+<span class="sourceLineNo">055</span>        MEMORY(false);<a name="line.55"></a>
+<span class="sourceLineNo">056</span><a name="line.56"></a>
+<span class="sourceLineNo">057</span>        private boolean _basic;<a name="line.57"></a>
+<span class="sourceLineNo">058</span><a name="line.58"></a>
+<span class="sourceLineNo">059</span>        private SessionMode(boolean basic) {<a name="line.59"></a>
+<span class="sourceLineNo">060</span>                _basic = basic;<a name="line.60"></a>
+<span class="sourceLineNo">061</span>        }<a name="line.61"></a>
+<span class="sourceLineNo">062</span><a name="line.62"></a>
+<span class="sourceLineNo">063</span>        /**<a name="line.63"></a>
+<span class="sourceLineNo">064</span>         * If the mode is basic ({@link #READ_ONLY} or {@link #BASIC_READ_WRITE}).<a name="line.64"></a>
+<span class="sourceLineNo">065</span>         * <a name="line.65"></a>
+<span class="sourceLineNo">066</span>         * @return &lt;code&gt;true&lt;/code&gt; if this is basic.<a name="line.66"></a>
+<span class="sourceLineNo">067</span>         */<a name="line.67"></a>
+<span class="sourceLineNo">068</span>        public boolean isBasic() {<a name="line.68"></a>
+<span class="sourceLineNo">069</span>                return _basic;<a name="line.69"></a>
+<span class="sourceLineNo">070</span>        }<a name="line.70"></a>
+<span class="sourceLineNo">071</span>}<a name="line.71"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>

@@ -1,0 +1,9 @@
+ #mya:print printer.print(@)
+ //printer = new Printer(inputFile, outputFile);
+ class Person
+ //printer.userText(
+ //	"/* begin-inheritance */", 
+ //	"/* end-inheritance */", 
+ //	"/* you can write any code here */")
+ }
+ 

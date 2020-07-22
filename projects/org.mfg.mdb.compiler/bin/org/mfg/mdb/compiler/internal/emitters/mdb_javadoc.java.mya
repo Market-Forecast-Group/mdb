@@ -1,0 +1,267 @@
+/**
+ * <p>
+ * This class provides the API to manipulate $tableName$ files. 
+ * Here you will find the methods to modify and query the $tableName$ files. 
+ * </p>
+ * <p>
+ * An MDB file does not contain any meta-data, it is just raw data, 
+ * one record next to the other, every sinlge byte is part of the data,
+ * however, this class contains the required information to "understand"
+ * the files format. Important, do not try to access files created 
+ * by other classes because you will get an unexpected behavior and corrupted data.
+ * </p>
+ * <p>
+ * This is the schema this "driver" class understands:
+ * </p>
+ * <h3>$tableName$ definition</h3>
+ * <table border=1>
+ *	<caption>$tableName$</caption>
+ *	<tr>
+ *		<td>Column</td>
+ *		<td>Type</td>
+ *		<td>Order</td>
+ *		<td>Virtual</td>
+ *		<td>Formula</td>
+ *	</tr>
+//for(Column col : table) {
+ * <tr>
+ *		<td>$col.getName()$</td>
+ *		<td>$col.getType()$</td>
+ *		<td>$col.getOrder()$</td>
+ *		<td>$(col.isVirtual()? ''Yes'' : ''No'')$</td>
+ *		<td>$col.getFormula()$</td>
+ *	</tr>
+//}	
+ * </table>
+ * <h3>$tableName$MDB API</h3>
+ * <p>
+ * Now let's see the operations you can perform using this class on $tableName$ files:
+ * </p>
+ *
+ * <h3>Data Insertion</h3>
+ *
+ * <p>
+ * As you know, in MDB you cannot insert a record in the middle of the file, all the data you add to the file is at the end of it, for that reason
+ * we named {@link Appender} to the component in charge of this function. So to add data to the file you have to request an appender:
+ * </p>
+ * <pre>
+ * /# To connect to an MDB file, the best is to use
+ * /# the "connect" method of the session.
+ * /# In the next examples, we will asume you know it.
+ * 
+ * $schemaName$MDBSession session = ...;
+ * $tableName$MDB mdb = session.connectTo_$tableName$MDB("$tableName.toLowerCase()$.mdb");
+ * 
+ * /# request the appender.
+ * $tableName$MDB.Appender app = mdb.appender(); 
+ *
+ * /# set the appender values
+ // for(Column col : table) if (!col.isVirtual()) {
+ * app.$col.getName()$ = ...;
+ // }
+ // if (table.hasVirtualColumns()) {
+ *
+ * /# ignore the following virtual columns, they are computed automatically:
+ * /#
+ // 	for(Column col : table) if (col.isVirtual()) {
+ * /# app.$col.getName()$ == "$col.getFormula()$"
+ // 	}
+ // }
+
+ * /# add the record
+ * app.append();
+ *
+ * ...
+ *
+ * /# You can repeat this operation for each item you want to add to the file.
+ * /# Important, is possible that some of these records are yet in the memory buffer
+ * /# so to writes them to the file, you have to flush the appender:
+ *
+ * app.flush();
+ *
+ * ...
+ *
+ * /# When you are sure you do not want to add new records, close the appender.
+ * /# The close method also write the pending records to the disk, 
+ * /# so it is not needed to call the flush method.
+ *
+ * app.close();
+ * </pre>
+ * <p>
+ * So use the method {@link #appender()} to get the appender, and use the 
+ * methods {@link Appender#append()}, {@link Appender#append(Record)} and 
+ * {@link Appender#append_ref_unsafe(Record)} to add the records.
+ * </p>
+ *
+ * <h3>Data Query</h3>
+ * <p>
+ * We provide different APIs to retrieve data: cursors, selection methods and List wrappers. 
+ * All of them are based on cursors, so it is important you understand how cursors work.
+ * </p>
+ * <h4>Cursors</h4>
+ * <p>
+ * There are two type of cursors:
+ * </p>
+ * <ul>
+ * <li>{@link Cursor}: sequential cursor.</li>
+ * <li>{@link RandomCursor}: random access cursor.</li>
+ * </ul>
+ * <p>
+ * Both cursors have a particular function and you must use the more appropiate 
+ * depending on the problem. 
+ * </p>
+ *
+ * <h5>Sequential Cursor</h5>
+ *
+ * <p>
+ * This is the common cursor, it retrieves all the records from a start position to an stop position.
+ * The API is very simple, in the following example we print the data from "start" to "stop":
+ * </p>
+ * <pre>
+ * $tableName$MDB mdb = ...;
+ * long start = ...;
+ * long stop = ...;
+ *
+ * /# request a sequential cursor from start to stop
+ * $tableName$.Cursor cursor = mdb.cursor(start, stop);
+ *
+ * /# iterate the records from start to stop
+ * while (cursor.next()) {
+ * 	/# print the content of the current record
+ * 	System.out.println("Read "  
+// for(Column col : table) {
+ * 			+ cursor.$col.getName()$ + " "
+// }
+ * 		);
+ * }
+ * /# important always close the cursor
+ * cursor.close();
+ * </pre>
+ * <p>
+ * As you can see it is very simple, just to highlight that you should close the cursor
+ * when you stop using it. A cursor creates certain OS resources that should be released as
+ * soon the cursor is not needed anymore, also in certain operating systems like Windows, you 
+ * cannot delete the underlaying file until it gets released.
+ * <p> 
+ * See the {@link Cursor} javadoc for more details.
+ * </p>
+ * 
+ * <h5>Random Access Cursor</h5>
+ * <p>
+ * This cursor provides random access to the file. It is possible to implement a 
+ * random access method using sequential cursors (open it, read a record, and close), 
+ * but a {@link RandomCursor} is the API we provide
+ * to perform this task in a more efficient way.
+ * </p>
+ * <p>
+ * Let's see this API with an exmaple:
+ * </p>
+ * <pre>
+ * $tableName$MDB mdb = ...;
+ *
+ * /# request a random cursor
+ * $tableName$MDB.RandomCursor cursor = mdb.randomCursor();
+ *
+ * /# read record at position 10
+ * cursor.seek(10);
+ * System.out.println(cursor.toRecord());
+ *
+ * /# read record at position 34
+ * cursor.seek(34);
+ * System.out.println(cursor.toRecord());
+ *
+ * /# remember always to close the cursor
+ * cursor.close();
+ * </pre>
+ * <p>
+ * In our experience, many times you would like to keep alive a random access cursor
+ * until the session gets closed. In this case, we recommend to "defer" the cursor.
+ * A deferred cursor is not more than a cursor that is closed automatically
+ * when the session is closed.
+ * See the {@link MDBSession#defer(ICursor)} javadoc for more information.
+ * </p>
+ * <p>
+ * MDB uses random access cursors to implement other APIs with a higher level of abstraction
+ * like the {@link MDB#record(IRandomCursor, long)} method and the lists. Now we want to focus
+ * on the "record" method. It is very easy to use, the previous example can be re-implemented
+ * in this way:
+ * </p>
+ * <pre>
+ * $tableName$MDB mdb = ...;
+ * /# read record at position 10
+ * System.out.println(mdb.record(10));
+ *
+ * /# read record at position 34
+ * System.out.println(mdb.record(34));
+ * </pre>
+ * <p>
+ * Is it simpler right? And it performs very well, yet a random cursor is a bit faster
+ * but you can use the "record" if you have a deadline, just do not use to retrieve
+ * sequential, in that case remember to use a sequential cursor or one of the "select"
+ * methods (we explain later these methods).
+ * </p>
+ * <p>
+ * Something to highlight about the "record" method implementation, it creates 
+ * a random-deferred cursor per thread, so it i safe if many threads call it 
+ * at the same time.
+ * </p>
+ *
+ *
+ * <h4>Index Search</h4>
+ * <p>
+ * TODO: Documentation is coming...
+ * </p>
+ *
+ * <h3>Data Update</h3>
+ *
+ * <p>
+ * MDB provides two type of methods to update the values:
+ * </p>
+ * <ul>
+ * 	<li>
+ * 		Update a unqiue row. It re-writes the content of the whole record. 
+ * 		It is available for tables without array definitions.
+ * </li>
+ * 	<li>
+ *		Update a particular column or a unique row. It re-writes only that field of the record. 
+ * 		It is available only for non-array columns.
+ * 	</li>
+ * </ul>
+ * <p>
+ * You see in both cases it updates only one record at the same time, and the value to replace should be primitive.
+ * Also remember virtual columns are not updated because its values are computed automatically, they are not stored physically.
+ * </p>
+ * <p>
+ * The API is simple:
+ * </p>
+ * <pre>
+ * $tableName$MDB mdb = ...;
+ * /# the index of the record you want to update/replace.
+ * long index = ...;
+ *
+ * /# the new values, remember virtual columns are ignored 	// if (table.hasVirtualColumns()) %
+ * /# the new values 										// else %
+ // for(Column col : table.realColumns()) {
+ * $col.getJavaTypeName()$ new_val_$col.getName()$ = ...;
+ // }
+ *
+ * mdb.replace(index 
+ // for(Column col : table.realColumns()) {
+ * 		, new_val_$col.getName()$
+ // }
+ *		);
+ * </pre>
+ * <p>
+ * If you want to update just one column of the record, then you may use the following methods:
+ * </p>
+ * <ul>
+// for(Column col : table) if (!col.isVirtual()) {
+ * <li>{@link $tableName$MDB#replace_$col.getName()$(long, $col.getType().getJavaType().getSimpleName()$)}: To replace the $col.getName()$ value.</li>
+// }
+ * </ul>
+ *
+ * <h3>List API</h3>
+ * TODO: Documentation is comming
+ *
+ * @see $schemaName$MDBSession#connectTo_$tableName$MDB(String)
+ */

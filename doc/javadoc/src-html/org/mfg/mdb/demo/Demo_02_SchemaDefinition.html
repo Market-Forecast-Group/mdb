@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../../styles.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>package org.mfg.mdb.demo;<a name="line.1"></a>
+<span class="sourceLineNo">002</span><a name="line.2"></a>
+<span class="sourceLineNo">003</span>import java.io.IOException;<a name="line.3"></a>
+<span class="sourceLineNo">004</span><a name="line.4"></a>
+<span class="sourceLineNo">005</span>import org.mfg.mdb.compiler.Compiler;<a name="line.5"></a>
+<span class="sourceLineNo">006</span>import org.mfg.mdb.compiler.Order;<a name="line.6"></a>
+<span class="sourceLineNo">007</span>import org.mfg.mdb.compiler.Type;<a name="line.7"></a>
+<span class="sourceLineNo">008</span><a name="line.8"></a>
+<span class="sourceLineNo">009</span>/**<a name="line.9"></a>
+<span class="sourceLineNo">010</span> * &lt;p&gt;<a name="line.10"></a>
+<span class="sourceLineNo">011</span> * Define a schema to store prices. It contains one "Price" table with "time"<a name="line.11"></a>
+<span class="sourceLineNo">012</span> * and "price" columns.<a name="line.12"></a>
+<span class="sourceLineNo">013</span> * &lt;/p&gt;<a name="line.13"></a>
+<span class="sourceLineNo">014</span> * &lt;p&gt;<a name="line.14"></a>
+<span class="sourceLineNo">015</span> * You can follow this class as a template for you to define your own schemas.<a name="line.15"></a>
+<span class="sourceLineNo">016</span> * Note the different elements:<a name="line.16"></a>
+<span class="sourceLineNo">017</span> * &lt;/p&gt;<a name="line.17"></a>
+<span class="sourceLineNo">018</span> * &lt;ol&gt;<a name="line.18"></a>
+<span class="sourceLineNo">019</span> * &lt;li&gt;Your class should extends the {@link Compiler} class.&lt;/li&gt;<a name="line.19"></a>
+<span class="sourceLineNo">020</span> * &lt;li&gt;In the constructor you code the schema using the "table" and "column"<a name="line.20"></a>
+<span class="sourceLineNo">021</span> * methods.&lt;/li&gt;<a name="line.21"></a>
+<span class="sourceLineNo">022</span> * &lt;li&gt;In the main method you execute the compiler.&lt;/li&gt;<a name="line.22"></a>
+<span class="sourceLineNo">023</span> * &lt;/ol&gt;<a name="line.23"></a>
+<span class="sourceLineNo">024</span> * &lt;p&gt;<a name="line.24"></a>
+<span class="sourceLineNo">025</span> * &lt;a href=<a name="line.25"></a>
+<span class="sourceLineNo">026</span> * "../../../../src-html/org/mfg/mdb/demo/Demo_02_SchemaDefinition.html#line.33"<a name="line.26"></a>
+<span class="sourceLineNo">027</span> * &gt; See the code&lt;/a&gt;<a name="line.27"></a>
+<span class="sourceLineNo">028</span> * &lt;/p&gt;<a name="line.28"></a>
+<span class="sourceLineNo">029</span> * <a name="line.29"></a>
+<span class="sourceLineNo">030</span> * @author arian<a name="line.30"></a>
+<span class="sourceLineNo">031</span> *<a name="line.31"></a>
+<span class="sourceLineNo">032</span> */<a name="line.32"></a>
+<span class="sourceLineNo">033</span>public class Demo_02_SchemaDefinition extends Compiler {<a name="line.33"></a>
+<span class="sourceLineNo">034</span><a name="line.34"></a>
+<span class="sourceLineNo">035</span>        /**<a name="line.35"></a>
+<span class="sourceLineNo">036</span>         * In the constructor you define the schema.<a name="line.36"></a>
+<span class="sourceLineNo">037</span>         */<a name="line.37"></a>
+<span class="sourceLineNo">038</span>        {<a name="line.38"></a>
+<span class="sourceLineNo">039</span>                schemaName("Demo_02_");<a name="line.39"></a>
+<span class="sourceLineNo">040</span>                packageName("org.mfg.mdb.demo");<a name="line.40"></a>
+<span class="sourceLineNo">041</span><a name="line.41"></a>
+<span class="sourceLineNo">042</span>                // start a table definition<a name="line.42"></a>
+<span class="sourceLineNo">043</span>                table("Demo_02_Price");<a name="line.43"></a>
+<span class="sourceLineNo">044</span>                // define a "time" column of type "int" with an ascending order<a name="line.44"></a>
+<span class="sourceLineNo">045</span>                // the order will be used to generate special methods like binary search<a name="line.45"></a>
+<span class="sourceLineNo">046</span>                // methods.<a name="line.46"></a>
+<span class="sourceLineNo">047</span>                column("time", Type.INTEGER, Order.ASCENDING);<a name="line.47"></a>
+<span class="sourceLineNo">048</span><a name="line.48"></a>
+<span class="sourceLineNo">049</span>                // define a "price" column of type "long".<a name="line.49"></a>
+<span class="sourceLineNo">050</span>                column("price", Type.LONG);<a name="line.50"></a>
+<span class="sourceLineNo">051</span>        }<a name="line.51"></a>
+<span class="sourceLineNo">052</span><a name="line.52"></a>
+<span class="sourceLineNo">053</span>        /**<a name="line.53"></a>
+<span class="sourceLineNo">054</span>         * In the main method you execute the compiler.<a name="line.54"></a>
+<span class="sourceLineNo">055</span>         * <a name="line.55"></a>
+<span class="sourceLineNo">056</span>         * @param args<a name="line.56"></a>
+<span class="sourceLineNo">057</span>         *            The program arguments.<a name="line.57"></a>
+<span class="sourceLineNo">058</span>         * @throws IOException<a name="line.58"></a>
+<span class="sourceLineNo">059</span>         *             If there is any I/O error.<a name="line.59"></a>
+<span class="sourceLineNo">060</span>         */<a name="line.60"></a>
+<span class="sourceLineNo">061</span>        public static void main(String[] args) throws IOException {<a name="line.61"></a>
+<span class="sourceLineNo">062</span>                Demo_02_SchemaDefinition demo = new Demo_02_SchemaDefinition();<a name="line.62"></a>
+<span class="sourceLineNo">063</span>                String pathToSrcFolder = "/home/arian/Documents/Source/mdb/projects/org.mfg.mdb.demo/src";<a name="line.63"></a>
+<span class="sourceLineNo">064</span>                demo.compile(pathToSrcFolder);<a name="line.64"></a>
+<span class="sourceLineNo">065</span>        }<a name="line.65"></a>
+<span class="sourceLineNo">066</span>}<a name="line.66"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>

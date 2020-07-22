@@ -1,0 +1,543 @@
+/**
+	* <p>
+	* This is the class used to append records to an MDB file.
+	* </p>
+	* The common way to use an appender is:
+	* <pre>
+	* Appender ap = mdb.appender();
+	* while( ... ) {
+//	for(Column col : table) { if (col.isVirtual()) continue;
+	* 	ap.$col.getName()$ = get$camelCase(col.getName())$();	
+//	}
+	* 	ap.append();
+	* }
+	* ap.close();
+	* </pre>
+// if (table.hasVirtualColumns()) {	
+	* <p>
+	* Note the virtual columns was ignored, this is because those values 
+	* are computed by a formula in the "append" method.
+	* </p>
+// }
+	*/
+	public final class Appender implements IAppender<Record> {
+		protected RandomAccessFile _raf;
+		FileChannel _channel;
+		protected $tableName$MDB _mdb;	
+		protected ByteBuffer _buf;	 
+// 	if (hasArray) {
+		protected RandomAccessFile _arrayRaf;
+		FileChannel _arrayChannel;
+//	}		
+//		for (Column col : table) {
+//		if (col.isVirtual()) {
+		/** 
+		 * Virtual field. Formula: <code>$col.getFormula()$</code>
+		 */		
+//		}
+		public $col.getType().getJavaType().getSimpleName()$ $col.getName()$; /* $col.getIndex()$ */
+//	}
+		
+		/**
+		* The constructor.
+		*/
+		Appender() throws IOException {
+			_mdb = $tableName$MDB.this;
+			if (!_memory) {
+				_buf = ByteBuffer.allocate(_bufferSize * $rowSize$);
+				reconnectFile();
+			}
+		}
+		
+		/**
+		* Close the file handlers and free the files. This method is used to "unlock" the file and 
+		* perform other "write" operations outside the appender.
+		*/
+		void disconnectFile() throws IOException {
+			if (_memory) return;
+			
+			_raf.close();
+			_channel.close();	
+//	if (hasArray) {			
+			_arrayRaf.close();
+			_arrayChannel.close();
+//	}
+			
+		}
+		
+		/**
+		* Open the file handlers again.
+		*/
+		void reconnectFile() throws IOException {		
+			if (_memory) return;
+		
+			_raf = new RandomAccessFile(getFile(), "rw");
+			_channel = _raf.getChannel();
+			_channel.position(_raf.length());
+			_buf.rewind();
+//	if (hasArray) {			
+			_arrayRaf = new RandomAccessFile(getArrayFile(), "rw");
+			_arrayChannel = _arrayRaf.getChannel();
+			_arrayChannel.position(_arrayChannel.size());
+//	}
+		}
+		
+		/**
+		* Append a new record to the file with the appender's values. 
+		*/
+		@SuppressWarnings("null") // if (hasString) %
+		@Override
+		public void append() throws IOException {
+			if (_basic) {
+				try {
+					assert _rbufSize == 0 && _rbuf == null : "In basic mode the shared buffer is empty";
+				
+					/* basic append, do not put the record in memory */
+					if (_buf.position() == _buf.capacity()) {
+						flush();
+					}
+
+//	if (hasVirtualColumns) {
+					/* Virtual fields */
+					long idx = _rbufPos + _rbufSize; // if (table.containsVirtualColumnsBasedOnPosition()) %
+//		for(Column col : table) {
+//			if (col.isVirtual()) {
+//				String expr = expandExpr(col.getFormula(), "$$", "this", "$pos$", "idx").trim();				
+					this.$col.getName()$ = $expr$;
+//			}		
+//		}
+//	}
+				
+//	for (final Column col : table) {
+//		if (!col.isVirtual()) {
+//			boolean isString = col.getType() == Type.STRING;
+//			String colName = col.getName();				
+//			String varName = isString ? "__" + colName : "this." + colName;				
+//			if (col.getType().isArray()) {
+//				final Type elementType = col.getType().getElementType();
+//				final int elementSize = elementType.getSize();			
+					{
+//				if (isString) {
+						byte[] $varName$ = this.$col.getName()$ == null? null : this.$col.getName()$.getBytes();
+//					}
+						int len = $varName$ == null? 0 : $varName$.length;
+						_buf.putLong(_arrayChannel.position());
+						_buf.putInt(len * $elementSize$);
+						if (len > 0) {
+							ByteBuffer arrayBuf = ByteBuffer.wrap(new byte[len * $elementSize$]);
+							for (int i = 0; i < len; i++) {
+								arrayBuf.put((byte)($varName$[i]? 1 : 0)); // if (elementType == Type.BOOLEAN) %
+								arrayBuf.put$elementType.getGetName()$($varName$[i]); // else %
+							}
+							arrayBuf.rewind();
+							_arrayChannel.write(arrayBuf);
+						}
+					}
+//			} else {
+//				if (col.getType() == Type.BOOLEAN) {
+					_buf.put((byte) ($varName$? 1 : 0));
+//				} else {
+					_buf.put$col.getType().getGetName()$($varName$);
+//				}
+//			} /* is array */
+//		} /* is not virtual */
+//	} /* for */
+
+					_size++;
+					
+					return;
+				} catch (Exception e) {
+					_size = fsize();
+					throw e;
+				}
+			}
+
+				/* regular append, put the record in the shared buffer */
+				_writeLock.lock();
+				try {
+					if (_rbufSize == _rbuf.length) {
+						if (_memory) {
+							int newSize = _rbufSize * 2;
+							Record[] b = new Record[newSize];
+							System.arraycopy(_rbuf, 0, b, 0, _rbufSize);
+							for(int i = 0; i < _rbufSize; i++) {
+								b[_rbufSize + i] = new Record();
+							}
+							_rbuf = b;
+						} else {
+							flush();
+						}
+					}	
+					Record r = _rbuf[_rbufSize];
+//	for(Column col : table) {
+//		if (!col.isVirtual()) {
+					r.$col.getName()$ = this.$col.getName()$;
+//		}		
+//	}			
+//	if (hasVirtualColumns) {
+					/* Virtual fields */
+					long idx = _rbufPos + _rbufSize; // if (table.containsVirtualColumnsBasedOnPosition()) %
+//		for(Column col : table) {
+//			if (col.isVirtual()) {
+//				String expr = expandExpr(col.getFormula(), "$$", "r", "$pos$", "idx").trim();				
+					r.$col.getName()$ = this.$col.getName()$ = $expr$;
+//			}		
+//		}
+				
+//	}			
+					_rbufSize++;
+					_size++;
+				} catch (Exception e) {
+					_size = fsize() + _rbufSize;
+					throw e;
+				} finally {
+					_writeLock.unlock();
+				}
+//	emitExt(TARGET_MDB_CLASS_APPEND_METHOD);	
+		}
+
+		/**
+		 * Append to the file a copy of the given record.
+		 */
+		@Override
+		public void append(Record record) throws IOException {	
+			if (_basic) {
+// for(Column col : table.realColumns()) {
+				this.$col.getName()$ = record.$col.getName()$;
+// }				
+				append();
+				return;
+			}
+
+			_writeLock.lock();
+			try {										
+				if (_rbufSize == _rbuf.length) {
+					if (_memory) {
+						int newSize = _rbufSize * 2;
+						Record[] b = new Record[newSize];
+						System.arraycopy(_rbuf, 0, b, 0, _rbufSize);
+						for(int i = 0; i < _rbufSize; i++) {
+							b[_rbufSize + i] = new Record();
+						}
+						_rbuf = b;
+					} else {
+						flush();
+					}
+				}	
+				Record r = _rbuf[_rbufSize];
+//	for(Column col : table) {
+//		if (!col.isVirtual()) {
+				r.$col.getName()$ = record.$col.getName()$;
+//		}		
+//	}			
+//	if (hasVirtualColumns) {
+				/* Virtual fields */
+				long idx = _rbufPos + _rbufSize; // if (table.containsVirtualColumnsBasedOnPosition()) %
+//		for(Column col : table) {
+//			if (col.isVirtual()) {
+//				String expr = expandExpr(col.getFormula(), "$$", "r", "$pos$", "idx").trim();				
+				r.$col.getName()$ = this.$col.getName()$ = $expr$;
+//			}		
+//		}
+				
+//	}			
+				_rbufSize++;
+				_size++;
+			} catch (Exception e) {
+				_size = fsize() + _rbufPos;
+				throw e;
+			} finally {
+				_writeLock.unlock();
+			}
+// emitExt(TARGET_MDB_CLASS_APPEND_METHOD);
+		}
+		
+		/**
+		 * <p>
+		 * Warning! Do not use this method if you don't know what are you doing!
+		 * </p>
+		 * <p>
+		 * Append the record but not copy it. Use this method if you are fully sure that you will not touch that record instance again, 
+		 * else the data will be corrupted.
+		 * </p> 
+		 */
+		@Override
+		public void append_ref_unsafe(Record record) throws IOException {
+			if (_basic) {
+// for(Column col : table.realColumns()) {
+				this.$col.getName()$ = record.$col.getName()$;
+// }			
+				append();
+				return;
+			}	
+
+			_writeLock.lock();	
+			try {											
+				if (_rbufSize == _rbuf.length) {
+					if (_memory) {
+						int newSize = _rbufSize * 2;
+						Record[] b = new Record[newSize];
+						System.arraycopy(_rbuf, 0, b, 0, _rbufSize);
+						for(int i = 0; i < _rbufSize; i++) {
+							b[_rbufSize + i] = new Record();
+						}
+						_rbuf = b;
+					} else {
+						flush();
+					}
+				}	
+				_rbuf[_rbufSize] = record;
+//	if (hasVirtualColumns) {
+				/* Virtual fields */
+				long idx = _rbufPos + _rbufSize; // if (table.containsVirtualColumnsBasedOnPosition()) %
+//		for(Column col : table) {
+//			if (col.isVirtual()) {
+//				String expr = expandExpr(col.getFormula(), "$$", "record", "$pos$", "idx").trim();				
+				record.$col.getName()$ = this.$col.getName()$ = $expr$;
+//			}		
+//		}
+				
+//	}			
+				_rbufSize++;
+				_size++;
+			} catch (Exception e) {
+				_size = fsize() + _rbufSize;
+				throw e;
+			} finally {
+				_writeLock.unlock();
+			}
+// emitExt(TARGET_MDB_CLASS_APPEND_METHOD);			
+		}
+
+
+		@SuppressWarnings("null") // if (hasString) %
+		/**
+		* Write pending records, it clears the buffer.
+		* @throws IOException If there is any I/O error.
+		*/
+		public void flush() throws IOException {	
+			if (_basic) {
+				_buf.limit(_buf.position());
+				_buf.rewind();
+				_channel.write(_buf);
+				_buf.limit(_buf.capacity());
+				_buf.rewind();
+				_rbufPos = fsize();
+				return;
+			}
+			
+			if (_memory) {
+				return;
+			}
+
+			for(int j = 0; j < _rbufSize; j++) {						
+				Record r = _rbuf[j];
+//	for (final Column col : table) {
+//		if (!col.isVirtual()) {
+//			boolean isString = col.getType() == Type.STRING;
+//			String colName = col.getName();				
+//			String varName = isString ? "__" + colName : "r." + colName;				
+//			if (col.getType().isArray()) {
+//				final Type elementType = col.getType().getElementType();
+//				final int elementSize = elementType.getSize();			
+				{
+//				if (isString) {
+					byte[] $varName$ = r.$col.getName()$ == null? null : r.$col.getName()$.getBytes();
+//				}
+					int len = $varName$ == null? 0 : $varName$.length;
+					_buf.putLong(_arrayChannel.position());
+					_buf.putInt(len * $elementSize$);
+					if (len > 0) {
+						ByteBuffer arrayBuf = ByteBuffer.wrap(new byte[len * $elementSize$]);
+						for (int i = 0; i < len; i++) {
+							arrayBuf.put((byte)($varName$[i]? 1 : 0)); // if (elementType == Type.BOOLEAN) %
+							arrayBuf.put$elementType.getGetName()$($varName$[i]); // else %
+						}
+						arrayBuf.rewind();
+						_arrayChannel.write(arrayBuf);
+					}
+				}
+//			} else {
+//				if (col.getType() == Type.BOOLEAN) {
+				_buf.put((byte) ($varName$? 1 : 0));
+//				} else {
+				_buf.put$col.getType().getGetName()$($varName$);
+//				}
+//			} /* is array */
+//		} /* is not virtual */
+//	} /* for */
+			}
+			_buf.rewind();
+			_buf.limit(_rbufSize * $rowSize$);
+			_channel.write(_buf);
+			_buf.limit(_buf.capacity());
+			_buf.rewind();
+			
+			_writeLock.lock();		
+			try {			
+				_rbufSize = 0;
+				_rbufPos = fsize();
+			} finally {
+				_writeLock.unlock();
+			}
+		}
+		
+		/**
+		* Flush the pending records and close the associated files.
+		*/	
+		@Override
+		public void close() throws IOException {
+			if (_memory) return;
+			
+			if (_basic || _rbufSize > 0) {
+				flush();
+			}
+			disconnectFile();	
+		}
+					
+		/**
+		* Get the associated MDB instance.
+		*/
+		@Override
+		public $tableName$MDB getMDB() {
+			return _mdb;
+		}
+		
+		/**
+		* Create a record with the appender's values.
+		*/
+		@Override
+		public Record toRecord() {
+			Record r = new Record();
+//	for(Column col : table) {
+//		String name = col.getName();
+//		if (col.getType().isArrayButNotString()) {
+			r.$name$ = this.$name$ == null? null : java.util.Arrays.copyOf(this.$name$, this.$name$.length); 	
+//		} else {
+			r.$name$ = this.$name$;
+//		}			
+//	}				
+			return r;
+		}
+		
+		/**
+		* Update the appender's values with the values of the given record.
+		* @param record The record to update.
+		*/
+		public void update(Record record) {
+//	for(Column col : table) {
+//		String name = col.getName();
+//		if (col.getType().isArrayButNotString()) {
+			this.$name$ = record.$name$ == null? null : java.util.Arrays.copyOf(record.$name$, record.$name$.length);
+//		} else {			
+			this.$name$ = record.$name$;
+//		}
+//	}
+		}
+
+	}
+
+	/**
+	* Return the singleton appender. For more details see the {@link Appender} class.
+	*/
+	@Override
+	public Appender appender() throws IOException {
+		if (!_connectedToFiles) {
+			assert !getFile().exists();		
+			throw new FileNotFoundException(
+					"This MDB was disconnected from the file "
+							+ getFile()
+							+ ", possibly because a backup restore deleted it.");
+		}
+		
+		if (_session != null) {
+			_session.appenderRequested(this);
+		}
+			
+		if (_appender == null) {
+			_appender = new Appender();
+		}
+		return _appender;
+	}
+		
+	/**
+	* If the appender is created.
+	*
+	* @return True in case the appender was requested before.
+	*/
+	public boolean isAppenderCreated() {
+		return _appender != null;
+	}
+		
+	/**
+	* If the appender was created and is open.
+	*/
+	@Override
+	public boolean isAppenderOpen() {
+		return _appender != null && _appender._channel.isOpen();
+	}
+		
+	/**
+	* Close the appender. If no appender was created, do nothing.
+	*/
+	@Override
+	public void closeAppender() throws IOException {
+		if (_appender != null) {
+			_appender.close();
+		}
+	}
+	
+	/**
+	* Closes the file handlers. This method is used by the session to restore backups.
+	* Do not use this method if you don't know what are you doing.
+	*/ 
+	@Override
+	protected void disconnectFile() throws IOException {
+		_writeLock.lock();
+		try {
+			_connectedToFiles = false;
+			if (_appender != null) {
+				_appender.disconnectFile();	
+			}
+			/# do not close the underlaying cursor
+			/# they are supposed to be closed
+			/# by the session because they are deferred
+			_localRandCursor.remove();
+			_localSeqCursor.remove();
+		} finally {
+			_writeLock.unlock();
+		}
+	}
+	
+	/**
+	* Create the file handlers. This is used for the session backup/recovery methods. 
+	* Do not use this method if you don't know what are you doing.
+	*/
+	@Override
+	protected void reconnectFile() throws IOException {
+		if (_appender != null) {
+			_appender.reconnectFile();
+			for(int i = 0; i < _bufferSize; i++) {
+				_rbuf[i] = new Record();
+			}
+		}
+		
+		if (!_basic) {
+			_rbufSize = 0;
+		}
+		
+		_size = fsize();
+		_rbufPos = _size;
+		_connectedToFiles = true;			
+	}
+	
+	/**
+	* Flush the appender. 
+	* @see Appender#flush()
+	*/
+	@Override
+	public void flushAppender() throws IOException {
+		if (_appender != null) {
+			_appender.flush();
+		}
+	}

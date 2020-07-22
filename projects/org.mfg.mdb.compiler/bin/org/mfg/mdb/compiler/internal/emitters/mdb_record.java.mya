@@ -1,0 +1,135 @@
+	/**
+	* $tableName$ record structure.
+	*/
+	public static class Record 
+// userText("/* BEGIN RECORD EXTENDS */\n", "\n/* END RECORD EXTENDS */","\t\timplements IRecord");
+	{
+//	for (Column col : table) {
+//		if (col.isVirtual()) {
+		/** Virtual field. Formula: <code>$col.getFormula()$</code>*/		
+//		}
+		/**
+		* Represents the $col.getName()$ column.
+		* <h2>Definition</h2>
+		* <table border=1>
+		* <caption>Definition of $col.getName()$</caption>
+		* <tr><td>Column</td><td>$col.getName()$</td></tr>
+		* <tr><td>Type</td><td>$col.getType()$</td></tr>
+		* <tr><td>Order</td><td>$col.getOrder()$</td></tr>
+		* <tr><td>Virtual</td><td>$(col.isVirtual()? ''Yes'' : ''No'')$</td></tr>
+		* <tr><td>Formula</td><td>$col.getFormula()$</td></tr> // if (col.isVirtual()) %
+		* </table>
+		*/
+		public $col.getType().getJavaType().getSimpleName()$ $col.getName()$; /* $col.getIndex()$ */
+//	}	
+
+		/**
+		* Returns an string representation of the record content.
+		*/
+		@Override
+		public String toString() {
+			return "$tableName$ [ "
+//	for(Column col : table) {
+//		if (col.getType().isArrayButNotString()) {
+				 + "$col.getName()$=" + java.util.Arrays.toString($col.getName()$) + " " 	
+//		} else {
+				 + "$col.getName()$=" + $col.getName()$ + " "	
+//		}
+//	}
+				 + " ]";
+		}
+
+	
+		/**
+		* An array of the record values.
+		*/
+		@Override
+		public Object[] toArray() {
+			return new Object[] {
+//	for(Column col : table) {			
+							$col.getType().boxing(col.getName())$,
+// }
+			 			};
+		}
+		
+		/**
+		* Record meta-data: the column names.
+		*/
+		@Override
+		public String[] getColumnsName() {
+			return COLUMNS_NAME;
+		} 
+		
+		/**
+		* Record meta-data: the column Java types.
+		*/
+		@Override
+		public Class<?>[] getColumnsType() {
+			return COLUMNS_TYPE;
+		} 			
+		
+		/**
+		* Clone the record.
+		*/
+		@Override
+		public Record clone() {
+			try {
+// 	if (hasArray) {
+				Record r = (Record) super.clone();
+//				for(Column col : table) {
+//					String name = col.getName();
+//					if (col.getType().isArrayButNotString()) {
+				r.$name$ = this.$name$ == null? null : java.util.Arrays.copyOf(this.$name$, this.$name$.length); 	
+//					} 
+//				}
+				return r;
+//	} else {				
+				return (Record) super.clone();
+//	}				
+			} catch (CloneNotSupportedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+		/**
+		* Get the value of the column at the <code>columnIndex</code> index.
+		*/
+		@Override
+		@SuppressWarnings("boxing")
+		public Object get(int columnIndex) {
+			switch(columnIndex) {
+//	for(Column col : table) {
+				case $col.getIndex()$: return $col.getName()$;
+//	}
+				default: throw new IndexOutOfBoundsException("Wrong column index " + columnIndex);			 
+			}
+		}
+		
+		/**
+		* Update the record with the given record's values. In case of arrays the content is copied too. 
+		* @param record The record to update.
+		*/ 
+		public void update(Record record) {
+// 	for(Column col : table) {
+//		String name = col.getName();
+//		if (col.getType().isArrayButNotString()) {
+			this.$name$ = record.$name$ == null? null : java.util.Arrays.copyOf(record.$name$, record.$name$.length);
+//		} else {			
+			this.$name$ = record.$name$;
+//		}
+//	}
+		}
+
+//	userText("/* BEGIN USER RECORD */", "/* END USER RECORD */", "\n/* User can insert his code here */\n");		
+		
+	}
+	
+	@Override
+	public Record[] makeRecordArray(int size) {
+		return new Record[size];
+	}
+	
+	@Override 
+	public Record makeRecord() {
+		return new Record();
+	}

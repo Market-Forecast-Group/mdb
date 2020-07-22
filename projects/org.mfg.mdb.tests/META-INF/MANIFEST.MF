@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Tests
+Bundle-SymbolicName: org.mfg.mdb.tests
+Bundle-Version: 1.0.0.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: org.mfg.mdb.compiler;bundle-version="1.0.0",
+ org.mfg.mdb.runtime;bundle-version="1.0.0",
+ org.mfg.mdbplugin;bundle-version="1.0.0",
+ com.mfg.mdbplugin.ext;bundle-version="1.0.0"

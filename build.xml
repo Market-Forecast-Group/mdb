@@ -1,0 +1,32 @@
+<!-- This is the main MfgChart build file -->
+<project name="mdb" default="javadoc" basedir=".">
+	<description>
+		MDB build.
+	</description>
+
+
+	<target name="javadoc">
+		<delete dir='doc/javadoc'/>
+        <javadoc 
+        	access="public" 
+        	author="true" 
+        	classpath="projects/org.mfg.mdb.compiler/lib/json.jar" 
+        	destdir="doc/javadoc" 
+        	overview="doc/overview.html"
+        	stylesheetfile="doc/styles.css" 
+        	helpfile="doc/overview.html"
+        	nodeprecated="false" 
+        	nodeprecatedlist="false" 
+        	noindex="true" 
+        	nonavbar="false" 
+        	notree="false"
+        	windowtitle="MFG Database (MDB)"
+        	doctitle="MFG Database (MDB)"
+        packagenames="org.mfg.mdb.runtime,org.mfg.mdb.compiler,org.mfg.mya,org.mfg.mdb.demo" source="1.8" 
+        	sourcepath="projects/org.mfg.mdb.runtime/src:projects/org.mfg.mdb.compiler/src:projects/org.mfg.mdb.demo/src:projects/org.mfg.mya/src" 
+        	use="true"
+        	linksource="yes"
+        	version="true"/>
+    </target>
+    
+</project>

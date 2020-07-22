@@ -1,0 +1,248 @@
+
+		/**
+		* <p>
+		* This class provides a random-access cursor API. In case you want to
+		* retrieve sequential data, the best is to use a sequential cursor (
+		* {@link Cursor}).
+		* </p>
+		* <p>
+		* This cursor is the basic, faster and more controlled way to retrieve
+		* random data, it is used internally by other elements like the
+		* {@link MDBList} class.
+		* </p>
+		* <p>
+		* The common way to use a random cursor is:
+		* </p>
+		* 
+		* <pre>
+		* $tableName$MDB mdb = ...;
+		* RandomCursor c = mdb.randomCursor(); 
+		* ...
+		* c.seek(somePosition);
+		* ...
+		* doSomething(c.$table.get(0).getName()$); // if (!table.isEmpty()) %
+		* ...
+		* c.close();
+		* </pre>
+		* <p>
+		* A random cursor contains the same "column fields" of a record, when the
+		* <code>seek()</code> method is called, the cursor "column fields" are
+		* updated.
+		* </p>
+		* <p>
+		* Warning: remember always to close the cursor, a common mistake is to try
+		* to delete a database when there are opened cursors: an open cursor blocks
+		* a file (at least in Windows). 
+		* </p>
+		* <p>
+		* Usually you need only one random cursor per file, so probably you want to keep this
+		* cursor open while the session is alive, then you can use "defer" the cursor, this mean, 
+		* the cursor will be closed automatically before to close the session. See the {@link MDBSession#defer(ICursor)} method. 
+		* </p>
+		* @see MDBSession#defer(ICursor)
+		* @see Cursor
+		*/
+		public final class RandomCursor implements IRandomCursor<Record> {
+			private ByteBuffer _buffer;
+//	for(Column col : table.realPrimColumns()) if(!col.getOrder().isNone()) {
+			ByteBuffer _buffer_$col.getName()$; /# used by index-of-$col.getName()$ method.
+//	}
+			private RandomAccessFile _raf;
+			FileChannel _channel;
+			private long _row;
+			private boolean _open;
+//		if (hasArray) {	
+			private RandomAccessFile _arrayRaf;
+			private FileChannel _arrayChannel;
+//		}
+//			for (Column col : table) {
+//			if (col.isVirtual()) {
+			/** Virtual field. Formula: <code>$col.getFormula()$</code>*/		
+//			}
+			public $col.getType().getJavaType().getSimpleName()$ $col.getName()$; /* $col.getIndex()$ */
+//		}
+
+			RandomCursor() throws IOException {
+				_open = true;
+			    _openCursorCount.incrementAndGet();    
+				_row = -1;
+				if (!_memory) {
+					_raf = new RandomAccessFile(getFile(), "r");
+					_channel = _raf.getChannel();
+					_buffer = ByteBuffer.allocate($rowSize$);
+//	if (hasArray) {			
+					_arrayRaf = new RandomAccessFile(getArrayFile(),"rw");
+					_arrayChannel = _arrayRaf.getChannel();
+//	}
+//	for(Column col : table.realPrimColumns()) if (!col.getOrder().isNone()){
+					_buffer_$col.getName()$ = ByteBuffer.allocate($col.getType().getSize()$);
+//	}
+				}
+				_session.cursorCreated(this);
+			}
+			
+			@Override
+			public synchronized void seek(long position) throws IOException {
+				/# if (!_open) throw new ClosedCursorException(this);
+				if (position < 0 || position >= _size) throw new IndexOutOfBoundsException("Index: " + position + ", Size: " + _size);
+				
+				if (!_basic) {
+					_readLock.lock();
+					try {
+						if (_rbufSize > 0 && position >= _rbufPos) {
+							_row = position;
+							Record r;
+							r = _rbuf[(int) (position - _rbufPos)];
+//	for (Column col : table) {
+//		String name = col.getName();					
+							this.$name$ = r.$name$;
+//	}
+							return;					
+						}
+					} finally {
+						_readLock.unlock();
+					}
+				}
+				
+				assert !_memory;
+				
+				_row = position;
+				_buffer.rewind();
+				_channel.read(_buffer, position * $rowSize$);
+				_buffer.rewind();
+//			 	for(Column col : table) {
+//				if (!col.isVirtual()) {
+//					Type type = col.getType();			
+//					boolean isString = type == Type.STRING;
+//					String colName = col.getName();			
+//					String varName = (isString? "__" : "this.") + colName;
+//					if (type.isArray()) {
+//						Type elementType = col.getType().getElementType();
+//						int elementSize = elementType.getSize();			
+				{
+					long start = _buffer.getLong();
+					int byteLen = _buffer.getInt();
+					ByteBuffer arrayBuf = ByteBuffer.allocate(byteLen);
+					_arrayChannel.read(arrayBuf, start);
+					arrayBuf.rewind();
+//						if (isString) {
+					byte[] $varName$ = new $elementType.getJavaType().getCanonicalName()$[byteLen / $elementSize$]; 
+//						} else {
+					$varName$ = new $elementType.getJavaType().getCanonicalName()$[byteLen / $elementSize$]; 
+//						}
+					for(int i = 0; i < $varName$.length; i++) {
+						$varName$[i] = arrayBuf.get() == 0? false : true; // if (elementType == Type.BOOLEAN) %
+						$varName$[i] = arrayBuf.get$elementType.getGetName()$(); // else %
+					}
+					this.$colName$ = new String($varName$); // if (isString) %
+				}
+//					} else { /* not array */
+//						if (type == Type.BOOLEAN) {
+				$varName$ = _buffer.get() == 0? false : true;
+//						} else {
+				$varName$ = _buffer.get$type.getGetName()$();
+//						}			
+//					}			
+//				} /* not virtual */		
+//		 	} /* for column */
+//			if (hasVirtualColumns) {
+					/* Virtual fields */
+//				for(Column col : table) {
+//					if (col.isVirtual()) {
+//						String expr = expandExpr(col.getFormula(), "$$", "this", "$pos$", "_row").trim();				
+				this.$col.getName()$ = $expr$;
+//					}		
+//				}			
+//			}			
+			}
+			
+			@Override
+			public void seekLast() throws IOException {
+				seek(_size - 1);
+			}
+			
+			@Override
+			public void seekFirst() throws IOException {
+				seek(0);
+			}
+			
+			
+			/**
+			* Close the cursor. Do that when the cursor is not needed anymore.
+			*/
+			@Override
+			public synchronized void close() throws IOException {
+				if (!_open) return;
+				_open = false;
+			    _openCursorCount.decrementAndGet();
+			    assert _openCursorCount.get() >= 0; 
+							    
+			    if (!_memory) {
+					_raf.close();
+					_arrayRaf.close(); // if (hasArray) %
+				}
+
+				_session.cursorClosed(this);
+			}
+			
+			@Override
+			protected void finalize() {
+				try {
+					close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			/**
+			* To check if the cursor is open.
+			*/
+			@Override
+			public synchronized boolean isOpen() {
+				return _open;
+			}
+			
+			/**
+			* The current position of the cursor.
+			*/
+			@Override
+			public long position() {
+				return _row;
+			}
+			
+			/**
+			* Create a record with the cursor data.
+			* You can use this method if you need to store the data in a collection.
+			*/
+			@Override
+			public Record toRecord() {
+				Record r = new Record();
+//	for(Column col : table) {
+//		String name = col.getName();
+//		if (col.getType().isArrayButNotString()) {
+				r.$name$ = this.$name$ == null? null : java.util.Arrays.copyOf(this.$name$, this.$name$.length); 	
+//		} else {
+				r.$name$ = this.$name$;
+//		}			
+//	}				
+				return r;
+			}
+			
+			/**
+			* The associated MDB instance.
+			*/
+			@Override
+			public $tableName$MDB getMDB() {
+				return $tableName$MDB.this;
+			}
+		}
+		
+	/**
+	* Create a random cursor.
+	* See the class {@link RandomCursor} for more details.
+	*
+	*/
+	@Override
+	public RandomCursor randomCursor() throws IOException {
+		return new RandomCursor();
+	}

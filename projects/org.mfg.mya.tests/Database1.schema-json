@@ -1,0 +1,1 @@
+{"name":"Schema1","source":"","packageName":"mdb","bufferSize":100,"tables":[{"uuid":"c5d9ac3a-ba71-46de-8266-63fa2b5224fc","name":"Table1","columns":[{"name":"Column1","uuid":"af9d3889-2c07-4642-9344-86969b521ae5","type":"LONG","order":"NONE","virtual":false,"formula":""}]}]}

@@ -1,0 +1,269 @@
+// 	String tableName = table.getName();
+//  String schemaName = table.getSchema().getName();
+// 	boolean hasArray = table.hasArray();
+//	boolean hasString = table.hasString();
+// 	boolean hasVirtualColumns = table.hasVirtualColumns();
+//	int rowSize = table.getRowSize();
+package $pkgname$;
+
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.io.FileNotFoundException;
+import java.io.RandomAccessFile;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.mfg.mdb.runtime.*;
+//userText("/* BEGIN USER IMPORTS */", "/* END USER IMPORTS */", "\n/* User can insert his code here */\n");
+
+
+#mya:import mdb_javadoc.java.mya
+public final class $tableName$MDB
+//userText("/* BEGIN MDB EXTENDS */\n", "\n/* END MDB EXTENDS */","\t\textends MDB<" + tableName + "MDB.Record>");
+
+implements IArrayMDB // if (hasArray) { % }  
+{
+
+// userText("/* BEGIN USER MDB */", "/* END USER MDB */", "\n/* User can insert his code here */\n");
+
+#mya:import mdb_metadata.java.mya
+
+	private Appender _appender;
+	private ByteBuffer _replaceBuffer; // if (!hasArray) %
+//	for(Column col : table.realPrimColumns()) {
+	private ByteBuffer _replaceBuffer_$col.getName()$;
+//	}
+	int _rbufSize;
+	AtomicInteger _openCursorCount;
+	long _rbufPos;
+	Record[] _rbuf;
+	long _size;
+	final $schemaName$MDBSession _session;
+
+	/**
+	 * The constructor. You can manipulate MDB files with an instance of this class 
+	 * and you don't need a session, but we recommend to create a session 
+	 * and connect to files with the session "connect" methods, 
+	 * specially when you have more than one file.
+// if (hasArray) {
+	 * @param session The session attached to this MDB instance.
+	 * @param file The main file.
+	 * @param arrayFile The file with the array values.
+	 * @param bufferSize The number of records to use in the buffer.
+	 * @param mode The session mode.
+	 * @throws IOException If there is an I/O error.
+	 */
+	public $tableName$MDB($schemaName$MDBSession session, File file, File arrayFile, int bufferSize, SessionMode mode) throws IOException {
+		super(TABLE_ID, TABLE_SIGNATURE, mode, file, arrayFile, bufferSize, COLUMNS_NAME, COLUMNS_TYPE);
+		
+		if (file == null || arrayFile == null) throw new IllegalArgumentException("Null files.");
+		if (file.equals(arrayFile)) throw new IllegalArgumentException("Main file is equal to the array file: " + file);
+// } else {
+	 * @param session The session attached to this MDB instance.
+	 * @param file The main file.
+	 * @param bufferSize The number of records to use in the buffer.
+	 * @param mode The session mode.
+	 * @throws IOException If there is an I/O error.
+	 */
+	public $tableName$MDB($schemaName$MDBSession session, File file, int bufferSize, SessionMode mode) throws IOException {
+		super(TABLE_ID, TABLE_SIGNATURE, mode, file, null, bufferSize, COLUMNS_NAME, COLUMNS_TYPE);
+		
+		if (file == null) throw new IllegalArgumentException("Null files.");
+// }
+		_session = session;
+		_openCursorCount = new AtomicInteger(0);
+		_rbufSize = 0;
+		_size = fsize();
+		
+		if (!_basic) {
+			_rbuf = new Record[_bufferSize];
+			for (int i = 0; i < _bufferSize; i++) {
+				_rbuf[i] = new Record();
+			}
+			_rbufPos = _size;
+			
+		}
+//	if (!hasArray || !table.realPrimColumns().isEmpty()) {
+		if (!_memory) {		
+//		if (!hasArray) {
+			_replaceBuffer = ByteBuffer.allocate($rowSize$);		
+//		}
+//		for(Column col : table.realPrimColumns()) {
+			_replaceBuffer_$col.getName()$ = ByteBuffer.allocate($col.getType().getSize()$);
+//		}
+		}
+//	}
+	}	
+
+#mya:import mdb_record.java.mya
+
+#mya:import mdb_appender.java.mya
+
+#mya:import mdb_seq_cursor.java.mya
+
+#mya:import mdb_rand_cursor.java.mya
+
+#mya:import mdb_buffer_writer.java.mya
+
+#mya:import mdb_replace.java.mya
+
+#mya:import mdb_index.java.mya
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public $schemaName$MDBSession getSession() {
+		return _session;
+	}
+
+	/**
+	 * Get the buffer. Warning: do not use this if you don't know what are you
+	 * doing.
+	 * 
+	 * @return The memory buffer.
+	 */
+	@Override
+	public Record[] getRecentRecordsBuffer() {
+		return _rbuf;
+	}
+	
+	/**
+	 * The number of opened cursors. You can use this to "debug" your programs.
+	 * 
+	 * @return The number of cursors.
+	 */
+	@Override
+	public int getOpenCursorCount() {
+		return _openCursorCount.get();
+	}
+
+	/**
+	 * Delete the associated files. Remember to close the cursors before to
+	 * perform this operation. If this MDB instance was created with a session,
+	 * do not call this method, else the {@link MDBSession#closeAndDelete()}
+	 * method.
+	 * 
+	 * @return <code>true</code> if all files was deleted.
+	 */
+	 @Override
+	public boolean deleteFiles() {
+		if (_memory) {
+			_rbufSize = 0;
+			return true;
+		}
+
+		boolean result = true;
+// if (hasArray) {
+			File arrayFile = getArrayFile();
+			if (arrayFile.exists() && !arrayFile.delete()) {
+				java.lang.System.err
+						.println("Cannot delete file " + arrayFile);
+				result = false;
+			}
+// }
+		File file = getFile();
+		if (file.exists() && !file.delete()) {
+			java.lang.System.err.println("Cannot delete file " + file);
+			result = false;
+		}
+		return result;
+	}
+	
+	/**
+	 * The number of records.
+	 * 
+	 * @return The number of rows.
+	 * @throws IOException If there is an I/O error.
+	 */
+	@Override
+	public long size() throws IOException {		
+		return _size;
+	}
+	
+	/**
+	 * The number of records already persisted in the file system.
+	 * 
+	 * @return The size in rows.
+	 * @throws IOException If there is an I/O error.
+	 */
+	public long fsize() throws IOException {		
+		return _memory? 0 : _file.length() / $rowSize$;
+	}
+	
+	/**
+	 * The number of records in the buffer.
+	 * 
+	 * @return Count buffer records.
+	 */
+	@Override
+	public int getRecentRecordsCount() {
+		return _rbufSize;
+	}
+	
+	@Override
+	public RandomCursor thread_randomCursor() throws IOException {
+		return (RandomCursor) super.thread_randomCursor();
+	}
+	
+	@Override
+	public Cursor thread_cursor() throws IOException {
+		return (Cursor) super.thread_cursor();
+	}
+	
+	/**
+	 * Truncate the file to the number of rows <code>len</code>.
+	 * 
+	 * @param len
+	 *            The desired number of rows.
+	 */
+	@Override
+	public void truncate(long len) throws IOException {
+		if (len < 0 || len > _size) {
+			throw new IllegalArgumentException("Cannot truncate to " + len + ", value out of range.");
+		}
+		
+		if (!_basic) _writeLock.lock();
+		
+		try {
+			if (_memory) {
+				_rbufSize = (int) len;
+				return;
+			}
+
+			long newLen = len * $table.getRowSize()$;
+			appender();
+			_appender.flush();
+			FileChannel channel = _appender._channel;
+			channel.truncate(newLen);
+			
+// for(Column col : table) {		
+// 	if (col.getType().isArray() && !col.isVirtual()) {
+				
+			long newArrLen = 0;
+				
+			if (newLen > 0) {				
+				// Truncate the array file // %		
+				long startPos = newLen - $table.getRowSize()$;   
+				ByteBuffer buf = ByteBuffer.wrap(new byte[$(Integer.SIZE + Long.SIZE) / 8$]);				
+				channel.read(buf, startPos + $col.getOffset()$);
+				buf.rewind();
+				long arrPos = buf.getLong();
+				int arrLen = buf.getInt();			
+				newArrLen = arrPos + arrLen;					
+			}
+				
+			_appender._arrayChannel.truncate(newArrLen);
+//		break;
+//	}		
+//}					
+			if (!_basic) {
+				_rbufPos = fsize();
+			}
+		} finally {
+			_size = fsize() + _rbufSize;
+			if (!_basic) _writeLock.unlock();
+		}					
+	}
+
+// emitExt(TARGET_MDB_CLASS);
+}	
+	

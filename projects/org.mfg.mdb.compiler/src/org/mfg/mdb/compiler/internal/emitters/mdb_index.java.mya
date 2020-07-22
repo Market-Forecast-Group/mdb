@@ -1,0 +1,523 @@
+// for(Column col : table) {
+//		if (col.getOrder().isNone() || col.isVirtual()) 
+//			continue;
+//		String colType = col.getType().getJavaType().getSimpleName();
+//		String colName = col.getName();	
+//		String colCamelName = camelCase(colName);
+
+	/**
+	 * Like {@link MDB#select(ISeqCursor, long, long)}, but starts at the index of <code>lower</code> 
+	 * and stops at the index of <code>upper</code>.
+	 * @param randCursor 
+	 *			The random cursor used to find the start and stop positions.
+	 * @param cursor
+	 *			The sequential cursor used to collect the data.
+	 * @param lower
+	 *			The lower value of <code>$colName$</code>.
+	 * @param upper
+	 *			The upper value of <code>$colName$</code>
+	 * @return The data between the lower and upper values.
+	 * @throws IOException If there is any I/O error.
+	 */	
+	public Record[] select__where_$colCamelName$_in(RandomCursor randCursor, Cursor cursor, $colType$ lower, $colType$ upper) throws IOException {
+		if (_size == 0) return NO_DATA;
+		
+		long start = indexOf$colCamelName$(randCursor, lower) - 1;
+
+		if (start < 0) {
+			start = 0;
+		}
+	
+		Record[] data = new Record[10];
+		int size = 0;
+	
+		cursor.reset(start, _size - 1);
+		while (cursor.next()) {
+			if (size + 2 > data.length) {
+				Record[] newData = new Record[(data.length * 3) / 2 + 1];
+				System.arraycopy(data, 0, newData, 0, size);
+				data = newData;
+			}
+			data[size] = cursor.toRecord();
+			size++;
+		
+			if (cursor.$colName$ > upper) {
+				break;
+			}
+		}
+
+		if (size < data.length) {
+			Record[] newData = new Record[size];
+			System.arraycopy(data, 0, newData, 0, size);
+			data = newData;
+		}
+		return data;
+	}
+	
+	/**
+	* Like {@link #select__where_$colCamelName$_in(RandomCursor, Cursor, $colType$, $colType$)} but it uses a sparse cursor.
+	* @param randCursor
+	*			The random cursor used to find the indexes and collect sparse data.
+	* @param cursor
+	*			The sequential cursor used to collect the continuous data. There are cases where the data is not sparse cause the small range of search.
+	* @param lower
+	*			The lower value to search.
+	* @param upper
+	*			The upper value to search.
+	* @param maxLen
+	*			The maximum number of records to collect.
+	* @return The array of sparse data.    
+	* @see MDB#select_sparse(IRandomCursor, ISeqCursor, long, long, int)
+	* @throws IOException If there is any I/O error.
+	*/
+	public Record[] select_sparse__where_$colCamelName$_in(RandomCursor randCursor, Cursor cursor, $colType$ lower, $colType$ upper, int maxLen)
+			throws IOException {
+		if (_size == 0) return NO_DATA;
+		
+		long start = indexOf$colCamelName$(randCursor, lower) - 1;
+		long stop = Math.min(indexOf$colCamelName$(randCursor, upper) + 1, _size - 1);
+		
+		if (start < 0) {
+			start = 0;
+		}
+		
+		long step = (stop - start) / maxLen;
+		
+		if (step < 2) {
+			return select__where_$colCamelName$_in(randCursor, cursor, lower, upper);
+		}
+	
+		Record[] data = new Record[10];
+		int size = 0;
+		long pos = start;
+		
+		while (pos <= stop) {
+			randCursor.seek(pos);
+			if (size + 2 > data.length) {
+				Record[] newData = new Record[(data.length * 3) / 2 + 1];
+				System.arraycopy(data, 0, newData, 0, size);
+				data = newData;
+			}
+			data[size] = randCursor.toRecord();
+			size++;
+		
+			if (randCursor.$colName$ > upper) {
+				break;
+			}
+			pos += step;
+		}
+	
+		if (size < data.length) {
+			Record[] newData = new Record[size];
+			System.arraycopy(data, 0, newData, 0, size);
+			data = newData;
+		}
+		return data;
+	}	
+// }
+// 	for(Column col : table) {
+//   	Order colOrder = col.getOrder();
+//		if (colOrder != Order.NONE) {
+//  		String colName = col.getName();
+//			String colType = col.getType().getJavaType().getSimpleName();
+//			boolean asc = colOrder == Order.ASCENDING;
+	/**
+	* Column <code>$colName$</code> order validator.
+	*/
+	public static final IValidator<Record> $upperCase(colName)$_$colOrder$_VALIDATOR = new IValidator<Record>() {
+		@Override
+		public boolean validate(ValidationArgs<Record> args, IValidatorListener<Record> listener) {
+			Record prev = args.getPrev();
+			Record current = args.getCurrent();
+			$colType$ prevValue = prev.$colName$;
+			$colType$ curValue = current.$colName$;
+			boolean valid = prevValue <= curValue; // if (asc) %
+			boolean valid = prevValue >= curValue; // else %
+			if (!valid) {
+				long row1 = args.getRow() - 1;
+				long row2 = args.getRow();
+				listener.errorReported(new ValidatorError<>(args, 						
+						// if (asc)
+						"$colName$(" + row1 + ")=" + prevValue + " > " + "$colName$(" + row2 + ")=" + curValue + ""));
+						// else
+						"$colName$(" + row1 + ")=" + prevValue + " < " + "$colName$(" + row2 + ")=" + curValue + ""));
+			}
+			return valid;
+		}
+	};
+	// }
+//	}
+// for(Column col : table) {
+// 	if(!col.isVirtual() && !col.getOrder().isNone()) {
+//		String colName = col.getName();
+//		String colCamelName = camelCase(colName);
+//		String colType = col.getType().getJavaType().getSimpleName();
+//		int colOrderBelow = col.getOrder() == Order.ASCENDING ? -1 : 1;
+//		int colOrderAbove = -colOrderBelow;
+//		String colGetName = col.getType().getGetName();
+//		int colOffset = col.getOffset();
+	/**
+	 * <p>
+	 * Record comparator for the column <code>$colName$</code>. 
+	 * This comparator takes in consideration the order of the column definition.
+	 * </p>
+	 */
+	public static class $colCamelName$Comparator implements java.util.Comparator<Record> {
+		
+		@Override
+		public int compare(Record o1, Record o2) {
+			return o1.$colName$ < o2.$colName$? -1 : (o1.$colName$ > o2.$colName$? 1 : 0);
+		}
+	}
+	
+	/**
+	* Like {@link #indexOf$colCamelName$(Record[], $colType$, int, int)}, but searches in the whole array.
+	*
+	* @param data
+	*			The array of data.
+	* @param key
+	*			The value to search.
+	* @return The index of the value.	
+	*/
+	public static int indexOf$colCamelName$(Record[] data, $colType$ key) {
+		return indexOf$colCamelName$(data, key, 0, data.length);
+	}
+
+	/**
+	* <p>
+	* From position <code>low</code> to <code>high</code>, this method finds the index 
+	* of the record with the $colName$ value closer to the given <code>key</code>. 
+	* This method uses a binary search algorithm (like <code>Arrays.binarySearch(...)</code>), so it assumes all the records 
+	* are ordered by the <code>$colName$</code> order specified in the column definition. 
+	* </p>
+	* <p>
+	* This method is an utility, it does not search on a file, else in an arbitrary array. 
+	* </p>
+	* @param data
+	* 			Array of records.
+	* @param key
+	* 			The value to find.
+	* @param low
+	* 			The index to start the search.
+	* @param high
+	* 			The index to stop the search.
+	* @return The index of the value.
+	*/
+	public static int indexOf$colCamelName$(Record[] data, $colType$ key, int low, int high) {
+		if (low < 0) throw new IndexOutOfBoundsException("Index: " + low + ", Size: " + data.length);
+		
+    	int low1 = low;
+    	int high1 = high;
+    	
+		while (low1 <= high1) {
+		    int mid = (low1 + high1) >>> 1;
+		    $colType$ midVal = data[mid].$colName$;
+		    int cmp = midVal == key ? 0 : (midVal < key ? $colOrderBelow$ : $colOrderAbove$);
+	
+		    if (cmp < 0) {
+				low1 = mid + 1;
+			} else if (cmp > 0) {
+				high1 = mid - 1;
+			} else {
+				return mid; /* key found */
+			}
+		}
+		return low1 == 0 ? 0 : low1 - 1; /* key not found */
+    }
+	
+	/**
+	* Like {@link #indexOf$colCamelName$(RandomCursor, $colType$, long, long)} but searches on the whole file.
+	*
+	* @param cursor
+	*			Random cursor used to search the value.
+	* @param key
+	*			The value to search.
+	* @return The index of the value.
+	*
+	* @throws IOException If there is any I/O error.
+	*/
+	public long indexOf$colCamelName$(RandomCursor cursor, $colType$ key) throws IOException {
+		return indexOf$colCamelName$(cursor, key, 0, _size - 1);
+	}
+	
+	/**
+	* <p>
+	* From position <code>low</code> to <code>high</code>, this method finds the index 
+	* of the record with the $colName$ value closer to the given <code>key</code>. 
+	* This method uses a binary search algorithm (like <code>Arrays.binarySearch(...)</code>), so it assumes all the records 
+	* are ordered by the <code>$colName$</code> order specified in the column definition. 
+	* </p>
+	* <p>
+	* In MDB there is not any type of "indexing" or "automatic sorting" of the data, 
+	* binary searches is the fast way used to find values.
+	* Usually, to retrieve certain range of data, first you get the start and stop positions
+	* (with this method), and then you create a cursor.  
+	* </p>
+	*
+	* @param cursor
+	*			The random cursor used to find the value.
+	* @param key
+	* 			The value to find.
+	* @param low
+	* 			The index to start the search.
+	* @param high
+	* 			The index to stop the search.
+	* @return 
+	*			The index of the value.
+	* @throws IOException If there is any I/O error.
+	*/
+	public long indexOf$colCamelName$(RandomCursor cursor, $colType$ key, long low, long high) throws IOException {
+		if (!_basic) _readLock.lock();
+		try {
+			if (low < 0) throw new IndexOutOfBoundsException("Index: " + low + ", Size: " + _size);
+			
+			long low1 = low;
+			
+			if (!_basic) {
+				if (low1 >= _rbufPos || high >= _rbufPos) {
+					Record r = _rbuf[0];
+					if (_memory || (r.$colName$ == key ? 0 
+							: (r.$colName$ < key ? $colOrderBelow$ : $colOrderAbove$)) <= 0) {
+						/* search in memory */
+						return _rbufPos + indexOf$colCamelName$(_rbuf, key, 0, (int) Math.min(high - _rbufPos, _rbufSize - 1));
+					}
+				}
+			}
+		
+			assert !_memory;		
+				
+			/* search in file */
+			long high2 = high >= _rbufPos ? _rbufPos - 1 : high;
+		
+			FileChannel channel = cursor._channel;
+			ByteBuffer buffer = cursor._buffer_$col.getName()$;
+				
+			while (low1 <= high2) {
+				final long mid = (low1 + high2) >>> 1;
+				channel.position(mid * $rowSize$ + $colOffset$);
+				buffer.rewind();
+				channel.read(buffer);
+				buffer.rewind();
+				
+				final $colType$ midVal = buffer.get$colGetName$();
+				final int cmp = midVal == key ? 0 : (midVal < key ? $colOrderBelow$ : $colOrderAbove$);
+				
+				if (cmp < 0) {
+					low1 = mid + 1;
+				}
+				else if (cmp > 0) {
+					high2 = mid - 1;
+				}
+				else {
+					return mid; /* key found */
+				}
+			}
+			return low1 == 0 ? 0 : low1 - 1; /* key not found */
+		} finally {
+			if (!_basic) _readLock.unlock();
+		}
+	}
+
+	/**
+	* Like {@link #indexOf$colCamelName$_exact(Record[], $colType$, int, int)}, 
+	* but searches on the whole array.
+	* @param data The array of data.
+	* @param key The value to search in the array.
+	* @return The index of <code>key</code>, or a number &lt; 0 if the key is not found.
+	*/
+	public static int indexOf$colCamelName$_exact(Record[] data, $colType$ key) {
+		return indexOf$colCamelName$_exact(data, key, 0, data.length);
+	}
+
+	/**
+	* Like {@link #indexOf$colCamelName$(Record[], $colType$, int, int)} 
+	* but it looks for the exact value, if the value does not exist, returns a number &lt; 0.
+	*
+	* @param data
+	* 			Array or records.
+	* @param key
+	* 			The value to find the index.
+	* @param low
+	* 			The start position of the search.
+	* @param high
+	* 			The stop position of the search.
+	*
+	* @return The index of <code>key</code>, or a number &lt; 0 if the key is not found.
+	*/
+	public static int indexOf$colCamelName$_exact(Record[] data, $colType$ key, int low, int high) {
+		if (low < 0) throw new IndexOutOfBoundsException("Index: " + low + ", Size: " + data.length);
+		
+    	int low1 = low;
+    	int high2 = high;
+		while (low1 <= high2) {
+		    int mid = (low1 + high2) >>> 1;
+		    $colType$ midVal = data[mid].$colName$;
+		    int cmp = midVal == key ? 0 : (midVal < key ? $colOrderBelow$ : $colOrderAbove$);
+	
+		    if (cmp < 0) {
+		    	low1 = mid + 1;
+			} else if (cmp > 0) {
+				high2 = mid - 1;
+			} else {
+				return mid; /* key found */
+			}
+		}
+		return -(low1 + 1); /* key not found */
+    }
+
+	/**
+	* Like {@link #indexOf$colCamelName$(RandomCursor, $colType$, long, long)} 
+	* but it looks for the exact value, if the value does not exist, returns a number &lt; 0.
+	*
+	* @param cursor
+	*			The cursor used to find the value.
+	* @param key
+	* 			The value to find the index.
+	* @param low
+	* 			The start position of the search.
+	* @param high
+	* 			The stop position of the search.
+	*
+	* @return The index of <code>key</code>, or a value &lt; 0 if the key is not found.
+	* @throws IOException If there is any I/O error.	
+	*/
+	public long indexOf$colCamelName$_exact(RandomCursor cursor, $colType$ key, long low, long high) throws IOException {
+		if (low < 0) throw new IndexOutOfBoundsException("Index: " + low + ", Size: " + _size);
+		
+		long low1 = low;
+		if (!_basic) _readLock.lock();
+		try {
+			if (!_basic) {
+				if (low1 >= _rbufPos || high >= _rbufPos) {
+					Record r = _rbuf[0];
+					if (_memory || (r.$colName$ == key ? 0 
+							: (r.$colName$ < key ? $colOrderBelow$ : $colOrderAbove$)) <= 0) {
+						/* search in memory */
+						long index = indexOf$colCamelName$_exact(_rbuf, key, 0, (int) Math.min(high - _rbufPos, _rbufSize - 1));
+						return index < 0? -_rbufPos + index /* key no found */ : _rbufPos + index;
+					}
+				}
+			}
+		
+			assert !_memory;
+			
+			/* search in file */
+	
+			long high2 = high >= _rbufPos ? _rbufPos - 1 : high;
+		
+			FileChannel channel = cursor._channel;
+			ByteBuffer buffer = cursor._buffer_$col.getName()$;
+				
+			while (low1 <= high2) {
+				final long mid = (low1 + high2) >>> 1;
+				
+				channel.position(mid * $rowSize$ + $colOffset$);
+				buffer.rewind();
+				channel.read(buffer);
+				buffer.rewind();
+				
+				final $colType$ midVal = buffer.get$colGetName$();
+				final int cmp = midVal == key ? 0 : (midVal < key ? $colOrderBelow$ : $colOrderAbove$);
+				
+				if (cmp < 0) {
+					low1 = mid + 1;
+				}
+				else if (cmp > 0) {
+					high2 = mid - 1;
+				}
+				else {
+					return mid; /* key found */
+				}
+			}
+		
+			return -(low1 + 1); /* key not found */
+		} finally {
+			if (!_basic) _readLock.unlock();
+		}
+	}
+	
+	/**
+	 * Like {@link #indexOf$colCamelName$_exact(RandomCursor, $colType$, long, long)}, but searches on the whole file.
+	 *
+	 * @param cursor The random cursor used to find the value.
+	 * @param key The value to search.
+	 * @return The index of the value. 
+	 * @throws IOException If there is any I/O error.
+	 */
+	public long indexOf$colCamelName$_exact(RandomCursor cursor, $colType$ key) throws IOException {
+		return indexOf$colCamelName$_exact(cursor, key, 0, _size - 1);
+	}
+	
+	/**
+	* Search the index of the given $colName$ and then truncate the database in that position.
+	*
+	* @param randCursor The cursor used to find the position of $colName$.
+	* @param $colName$ Truncate the file in the index of this value.
+	* @throws IOException If there is any I/O error.
+	*/
+	public void truncate$colCamelName$(RandomCursor randCursor, $colType$ $colName$) throws IOException {
+		if (_size > 0) {
+			long len = indexOf$colCamelName$(randCursor, $colName$);
+			if (len > 0) {
+				len--;
+			}
+			while (len < _size) {
+				randCursor.seek(len);
+				if (randCursor.$colName$ > $colName$) {
+					break;
+				}
+				len++;
+			}
+			truncate(len);
+		}
+	}
+	
+	/**
+	* Find the record with <code>$colName$</code> equals to the given value.
+	* 
+	* @param cursor The random cursor used to find the indexes.
+	* @param $colName$ The value to find.
+	*
+	* @return The found record or <code>null</code> if there is not any record with that value.
+	* @throws IOException If there is any I/O error.
+	*/
+	public Record findRecord_where_$colName$_is(RandomCursor cursor, $colType$ $colName$) throws IOException {
+		if (_size > 0) {
+			long i = indexOf$colCamelName$_exact(cursor, $colName$);
+			if (i < 0) {
+				return null;
+			}
+			cursor.seek(i);
+			Record r = cursor.toRecord();
+			assert r.$colName$ == $colName$;
+			return r;
+		}
+		return null;
+	}
+	
+	/**
+	 * Count the number of records between the $colName$ values <code>keyLower</code> and <code>keyUpper</code>.
+	 * If there are not records with those values, then it returns an approximation.
+	 *
+	 * @param cursor The random cursor used to find the indexes.
+	 * @param keyLower The value to start counting.
+	 * @param keyUpper The value to stop counting.
+	 * @return The number of records between the given values.
+	 *
+	 * @throws IOException If there is any I/O error.
+	 */
+	public long count$colCamelName$(RandomCursor cursor, $colType$ keyLower, $colType$ keyUpper) throws IOException {
+		if (_memory) {
+			long high = _size - 1;
+			long a = indexOf$colCamelName$(null, keyLower, 0L, high);
+			long b = indexOf$colCamelName$(null, keyUpper, 0L, high);
+			return b - a;
+		}
+		
+		long high = _size - 1;
+		long a = indexOf$colCamelName$(cursor, keyLower, 0L, high);
+		long b = indexOf$colCamelName$(cursor, keyUpper, 0L, high);
+		return b - a;
+	}
+//	} /* is !order.none */
+// } /* foreach col */

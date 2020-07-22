@@ -1,0 +1,48 @@
+#mya:print emitter.print(@);
+//package org.mfg.mdb.compiler.internal.emitters;
+//
+//import org.mfg.mdb.compiler.*;
+//import static org.mfg.mya.Printer.*;
+//
+//import java.io.IOException;
+//
+// /**
+//  * Generator of the session Java file. 
+//  * @author arian
+//  *
+//  */
+//public class SessionClassGenerator implements IExtensionTargets {
+//	/**
+//	 * The emitter to use.
+//	 */
+//	public OpenPrinter emitter;
+//	/**
+//	  * Schema
+//	  */
+//	public Schema schema;
+//
+//
+//	/**
+//	  * The name of the package 
+//	  */
+//	public String pkgname;
+//
+//	/*
+//	 * \@throws IOException I/O error.
+//	 */
+//	private void userText(String openTag, String closeTag, String def) throws IOException {
+//		emitter.userText(openTag, closeTag, def);
+//	}
+//
+//	private void emitExt(String extPoint) {
+//		emitter.emitExt(extPoint, null);
+//	}
+//
+//
+//	/**
+//	 * \@throws IOException If there is any I/O error.
+//	 */
+//	public void run() throws IOException {
+#mya:import session.java.mya
+//	}
+//}

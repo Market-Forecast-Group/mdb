@@ -1,0 +1,19 @@
+
+#builds
+build/*
+depcache/*
+dist/*
+$ext/*
+javadoc/*
+./*.jar
+ 	
+#eclipse
+org.eclipse.*.prefs
+
+#patch
+.orig
+.rej
+
+#globs
+syntax: glob
+*.class

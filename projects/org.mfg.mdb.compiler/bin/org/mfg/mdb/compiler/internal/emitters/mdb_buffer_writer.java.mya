@@ -1,0 +1,20 @@
+// if (!table.hasArray()) {
+// 	for (String clsname : new String[] {"Cursor", "RandomCursor", "Record"})	{
+	/**
+	 * <p>Write the field's values into the buffer in the same order they was declared.
+	 * The virtual fields are ignored.
+	 * </p> 
+	 * @param obj The object to serialize into the buffer.
+	 * @param buffer The buffer to fill.
+	 */
+	public static void writeBuffer($clsname$ obj, ByteBuffer buffer) {
+//			for (Column col : table) {
+//				if (!col.isVirtual()) {
+		buffer.put(obj.$col.getName()$ ? (byte) 1 : (byte) 0); // if (col.getType() == Type.BOOLEAN) { % }
+		buffer.put$col.getType().getGetName()$(obj.$col.getName()$); // else { % }
+//				}
+//			}	
+	}
+	
+// 	}
+// }

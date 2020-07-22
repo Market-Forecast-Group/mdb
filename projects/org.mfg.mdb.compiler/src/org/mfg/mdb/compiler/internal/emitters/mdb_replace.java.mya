@@ -1,0 +1,126 @@
+//
+//	String replaceMethodSignature = "";
+//	for(Column col : table.realPrimColumns()) {
+//		replaceMethodSignature += ", " + col.getJavaTypeName();
+//	}
+//
+// if (!table.hasArray()) {
+	/**
+	 * Replace the record at the given <code>index</code>.
+	 *
+	 * @param index The index to update.
+// 	for(Column col : table.realColumns()) {
+	 * @param val_$col.getName()$ The value for column $col.getName()$.
+// 	}
+	* @throws IOException If there is any I/O error.
+	 */
+	public void replace(long index 
+// for(Column col : table.realColumns()) {
+							, $col.getType().getJavaType().getSimpleName()$ val_$col.getName()$
+// }		
+			) throws IOException {
+		if (index < 0 || index >= _size) {
+			throw new IndexOutOfBoundsException("Index " + index + " out of bounds.");
+		}
+		if (!_basic) _writeLock.lock();
+		try {
+			if (!_basic) {
+				if (index >= _rbufPos) {
+					int pos = (int) (index - _rbufPos);
+					if (pos < _rbufSize) {
+						Record r = _rbuf[pos];
+// for (Column col : table.realColumns()) {
+						r.$col.getName()$ = val_$col.getName()$;
+// }							
+// 	if (table.hasVirtualColumns()) {
+						/# virtual fields
+// 		for (Column col: table.virtualColumns()) {
+// 			String expr = expandExpr(col.getFormula(), "$$.", "val_", "$pos$", "index"); 
+						r.$col.getName()$ = $expr$; 
+//		}
+//	}
+					}
+					return;
+				} 				
+			}
+		
+			_replaceBuffer.rewind();
+//	for (Column col : table) {
+// 		if (!col.isVirtual()) {
+// 			if (col.getType() == Type.BOOLEAN) {
+			_replaceBuffer.put((byte) (val_$col.getName()$ ? 1 : 0));
+//			} else {
+			_replaceBuffer.put$col.getType().getGetName()$(val_$col.getName()$);
+//			}
+//		} /* is not virtual */
+// 	}
+			_replaceBuffer.rewind();
+			appender();
+			_appender._channel.write(_replaceBuffer, index * $rowSize$);
+		} finally {
+			if (!_basic) _writeLock.unlock();
+		}		
+	}
+	
+	/**
+	 * Update the record at the given <code>index</code>.
+	 * Also you can use {@link #replace(long $replaceMethodSignature$)}.
+	 *
+	 * @param index The index to update.
+	 * @param record Contains the data to set.
+	 * @see #replace(long $replaceMethodSignature$)
+	 * @throws IOException If there is any I/O error.
+	 */
+	public void replace(long index, Record record) throws IOException {
+		replace(index 
+// 		for(Column col : table.realColumns()) {
+					, record.$col.getName()$		
+//		}
+				);			
+	}
+//	} /* !table.hasArray() */
+
+//	for(Column col : table) {
+//		if (!col.getType().isArray() && !col.isVirtual()) {
+//			String colName = col.getName();	
+//			String argType = col.getType().getJavaType().getName();	
+	/**
+	 * Update the record at the given <code>index</code>, 
+	 * but only the column "$col.getName()$" is updated. If you like to 
+	 * update many fields of the record then use {@link #replace(long $replaceMethodSignature$)},
+	 * but if you want to update just one column, use this method because it is faster.
+	 * 
+	 * @param index The index of the record to update.
+	 * @param value The new value to set to the column "$col.getName()$".
+	 *
+	 * @throws IOException If there is any I/O error.
+	 */
+	public void replace_$colName$(long index, $argType$ value) throws IOException {
+		if (!_basic) _writeLock.lock();
+		try {
+			if (!_basic) {
+				if (index >= _rbufPos) {
+					int pos = (int) (index - _rbufPos);
+					if (pos < _rbufSize) {
+						_rbuf[pos].$colName$ = value;
+					}
+					return;
+				} 				
+			}
+		
+//			String buf = "_replaceBuffer_" + col.getName();			
+			$buf$.rewind();
+// 			if (col.getType() == Type.BOOLEAN) {
+			$buf$.put((byte) (value ? 1 : 0));
+//			} else {
+			$buf$.put$col.getType().getGetName()$(value);
+//			}
+			$buf$.rewind();
+			appender();
+			_appender._channel.write($buf$, index * $rowSize$ + $col.getOffset()$);
+		} finally {
+			if (!_basic) _writeLock.unlock();
+		}		
+	}
+//		}	
+//	} /* replace_$col$*/

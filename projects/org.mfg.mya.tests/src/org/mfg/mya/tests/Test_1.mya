@@ -1,0 +1,15 @@
+#
+# emitter-name=emt
+# tab-size=4
+#
+import org.mfg.mya.*;
+import static org.mfg.mya.MyA2.*;
+
+public class Test_1_Generator {
+	public void generate_Hello_world(Emitter emitter) {
+		#mya:import HelloWorld.mya
+	}
+	
+	public void generate_Hola_mundo(Emitter emitter) {
+	}
+}

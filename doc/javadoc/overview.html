@@ -1,0 +1,372 @@
+<html>
+
+<head>
+    <link href="styles.css" rel="stylesheet" type="text/css">
+</head>
+
+<body class="mfg-body">
+
+    <p>
+        MFG Database (MDB) is an in-house database system used as the backend of the charts and algorithms of the <a href="http://marketforecastgroup.com">Market Forecast Group (MFG) System</a>. It compiles a database schema into a set of readable Java files. These files provides an API to make easier the storing and visualization of certain kind of data like time series. But the real power of this tool is the great performance and the efficiency you get in your data layer.
+        <p>
+            In MFG System we used traditional SQL systems to store the financial data, but we realized that the stock and indicator data contains a very simple structure, there is not complex relations between entities, else the data is grouped by certain "symbols" and the records are formed by numbers. These records are added in order and they are never deleted or modified. Then we decided to implement a faster and more efficient solution to fit our particular needs.
+        </p>
+
+        <b>Index</b>
+
+        <ul >
+            <li><a href="#intro-is-mdb-what-you-need">Is MDB what you need for your project?</a>
+            </li>
+            <li>
+                <a href="#intro-is-it-really-so-simple">Is it really so simple?</a>
+                <ul >
+                    <li><a href="#intro-define-and-compile">Define and compile the database schema</a>
+                    </li>
+                    <li><a href="#intro-write-and-read">Write and read on database files</a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#intro-understanding-basic">Understanding basic implementation concepts</a>
+                <ul >
+                    <li><a href="#intro-hand-written-append">Hand-written prove of concept</a>
+                    </li>
+                    <li><a href="#intro-utopy">The MDB utopy</a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="#intro-doc">Documentation</a>
+                <ul >
+                    <li><a href="org/mfg/mdb/compiler/package-summary.html">MDB Compiler</a>
+                    </li>
+                    <li><a href="org/mfg/mdb/runtime/package-summary.html">MDB Runtime</a>
+                    </li>
+                    <li><a href="org/mfg/mdb/demo/package-summary.html">MDB Demos</a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+
+
+
+        <h2 id="intro-is-mdb-what-you-need">Is MDB what you need for your project?</h2>
+
+        <p>
+            Probably not, this is not a general purpose database system, MDB addresses a particular domain where tables are formed by fixed-length records and provides a limited number of read/write functions. But probably yes...
+        </p>
+
+        <ul>
+            <li>If your project storage does not need a client/server architecture, or you are fine to use two database systems, one for your configurations/products/etc.. and other (MDB) for your time series, stats, points, etc... in a local host*.</li>
+            <li>If the data you pretend to save has fixed-length records formed by primitive types**.</li>
+            <li>If you need only to append and read data (no update, no delete***).</li>
+            <li>MDB does not implement any kind of indexing, but if the data is added in order (like time series), you can perform binary searches.</li>
+            <li>If it is fine to have only one thread writing into a table, but many threads reading it.</li>
+            <li>If you want an hybrid memory/file database or just a memory database.</li>
+            <li>If you need to save stock prices and show them in real-time.</li>
+            <li>If you need to develop a faster application in a record time.</li>
+            <li>MDB is perfect to backend visualization components like time series charts.</li>
+        </ul>
+
+        <p>* In MFG we use MDB also in the server side, we just developed a server compnent with the MFG API but with an MDB backend</p>
+        <p>** MDB also support arrays of primitive types and strings, but they are not optimized in any way, if you are looking for a database to store and search on texts, then MDB is not for you.</p>
+        <p>*** MDB provides certain functions to update records and truncate a table, but these functions should be used carefully, we just implemented them because in some cases like administration tasks they can be useful.
+        </p>
+        <p>Other features are:</p>
+        <ul>
+            <li>Virtual columns based on Java expressions.</li>
+            <li>Validators based on Java expressions.</li>
+            <li>Basic transaction mechanism based on backups. This is very slow and primitive, we developed it for administration tasks.</li>
+            <li>Backups.</li>
+            <li>A simple visual tool to design and compile the schemas</li>
+            <li>An all-features plugin for Eclipse</li>
+        </ul>
+
+
+
+
+
+
+        <h2 id="intro-is-it-really-so-simple">Is it really so simple?</h2>
+        We think yes. As we mentioned before, MDB is based on a compiler. The workflow is the following:
+        <ul>
+            <li>Define a database schema</li>
+            <li>Compile the schema into Java files</li>
+            <li>Use this generated API to write and read the database files</li>
+        </ul>
+
+        <h3 id="intro-define-and-compile">Define and compile the database schema</h3>
+
+        <p>You can do it using a graphical tool (we provide two) or you can do it writing a small Java program. Here we will use the second option.</p>
+        <p>Let's say our database has one table with two columns "time" and "price", then We write a "main" class like this:</p>
+
+        <pre>
+    public class CompilerDemo extends <b>org.mfg.mdb.compiler.Compiler</b> {
+        {
+            <b>schemaName("Demo")</b>
+
+            <b>table("TimeSeries");</b>
+            <b>column("time", Type.INTEGER, Order.ASCENDING);</b>
+            <b>column("price", Type.LONG);</b>
+        }
+
+        public static void main(String[] args) throws IOException {
+            CompilerDemo demo = new CompilerDemo();
+            <b>demo.compile("/path/to/your/project/src");</b>
+        }
+    }    
+            </pre>
+
+        <p>
+            The idea is to extends the MDB <code>Compiler</code> class and use the "table" and "column" methods to define the schema. Then in the "main" method is created the compiler and executed.
+        </p>
+        <p>
+            In the above case, we created a "Demo" schema with a "TimeSeries" table. This table has two columns "time" and "price". Then when you execute that class the MDB Java files are written in the <code>/path/to/your/project/src/demo</code> folder.
+        </p>
+        <p>
+            The generated files are formed by a class to handle a session and a set of files, one per table, to handle the database files:
+        </p>
+        <ul>
+            <li><code>DemoMDBSession</code>: the class to create a session.</li>
+            <li><code>TimeSeriesMDB</code>: the class to handle database files.</li>
+        </ul>
+
+        <h3 id="intro-write-and-read">Write and read on database files</h3>
+
+        <p>
+            How do we use them? You create a session, connect to a file, request an appender and add some data, request a cursor and read the file. The main elements on MDB are the session, MDB file handler, appender and cursors.
+        </p>
+
+        <p>Create the session:</p>
+
+        <pre>
+    DemoMDBSession session = new DemoMDBSession("demo-session", new File("path/to/db/"));</pre>
+        <p>Connect to an MDB file "prices-today.mdb":</p>
+        <pre>
+    TimeSeriesMDB mdb = session.<b>connectTo_TimeSeriesMDB</b>("prices-today.mdb");</pre>
+
+        <p>Get the appender of the file and add some data:</p>
+
+        <pre>
+    Appender appender = <b>mdb.appender()</b>;
+
+    int[] times = { 1, 10, 23, 40 };
+    long[] prices = { 10, 15, 5, 20 };
+
+    for (int i = 0; i &lt; 4; i++) {
+        <b>appender.time</b> = times[i];
+        <b>appender.price</b> = prices[i];
+        <b>appender.append()</b>;
+    }
+    appender.flush();</pre>
+
+        <p>Get a sequential cursor to iterate on the file and print the records:</p>
+
+        <pre>
+    try (Cursor cursor = <b>mdb.cursor()</b>) {
+        while (<b>cursor.next()</b>) {
+            int time = <b>cursor.time</b>;
+            long price = <b>cursor.price</b>;
+            out.println("record [" + time + ", " + price + "]");
+        }
+    }
+    </pre>
+
+
+        <p>Make a search on the "time" column (you can do it because it was defined with an order):</p>
+
+        <pre>
+    try (RandomCursor randomCursor = <b>mdb.randomCursor()</b>) {
+        Record row = <b>mdb.findRecord_where_time_is(randomCursor, 23)</b>;
+        out.println("The price at time 23 is " + <b>row.price</b>);
+    }
+    </pre>
+
+
+        <p>Close the session:</p>
+
+        <pre>
+    session.close();</pre>
+
+        <h2 id="intro-understanding-basic">Understanding basic implementation concepts</h2>
+
+        <p>
+            The first thing we did to prove our concept was to write a piece of code to save, read and search prices (a price is a record with two fields "time" and "price"). The low level API to read/write files in Java is the <code>RandomAccessFile</code> (RAF) related classes, so out point was first to use only the RAF API to store and read the prices.
+        </p>
+        <p>
+            This is what we wrote at first:
+        </p>
+        <h3 id="intro-hand-written-append">Hand-written prove of concept</h3>
+        <p>
+            As we said before, the format to store the data is "stupid", we place one record next to the other, just like RAF does. The algorithm is the following:
+        </p>
+        <ul>
+            <li>Create a buffer with the capacity of 100 records. The size (in bytes) of the buffer is <code>100 * RECORD_SIZE</code>, where the <code>RECORD_SIZE</code> is the total of the size (in bytes) of the columns. In this case, we have a record formed by two fields of type Integer, so the record size is <code>Integer.BYTES + Integer.BYTES.</code>
+            </li>
+
+            <li>For each price in the collection:</li>
+            <ul>
+                <li>If the buffer pointer is at the end, we write the whole buffer to the file</li>
+                <li>We add the record the buffer.</li>
+            </ul>
+
+            <li>At the end of the collection, if there are yet records in the buffer, then we write the buffer the range of the buffer with the records.</li>
+        </ul>
+
+        <pre>
+    <span class="mfg-comment">// the size in bytes of the record</span>
+    <b>RECORD_SIZE = Integer.BYTES + Integer.BYTES;</b>
+
+    <span class="mfg-comment">// the number of records in the buffer</span>
+    <b>BUFFER_SIZE = 100;</b>
+
+    <span class="mfg-comment">// the collection of prices to save. The record "i" is defined by [times[i], prices[i]]</span>
+    int[] times = ...;
+    int[] prices = ...;
+
+    try (
+            RandomAccessFile raf = new RandomAccessFile("prices.mdb", "rw");
+            FileChannel channel = raf.getChannel()
+    ) {
+        ByteBuffer buf = <b>ByteBuffer.allocate(RECORD_SIZE * BUFFER_SIZE)</b>;
+
+        for (int i = 0; i &lt; 250; i++) {
+            <span class="mfg-comment">// if the buffer is full write it to the file</span>
+            <b>if (buf.position() == buf.capacity()) {
+                buf.rewind();
+                channel.write(buf);
+                buf.rewind();
+            }</b>
+
+            <span class="mfg-comment">// add the record to the buffer</span>
+            <b>buf.putInt(times[i]);
+            buf.putInt(prices[i]);</b>
+        }
+
+        <span class="mfg-comment">// if there are records in the buffer then write them to file.</span>
+        <b>if (buf.position() > 0) {
+            buf.limit(buf.position());
+            buf.rewind();
+            channel.write(buf);
+        }</b>
+    }    
+        </pre>
+
+        <p>
+            Easy right? And fast. Now let's see how to read the data. The algorithm is similar:
+        </p>
+
+        <ul>
+            <li>Create a buffer with the capacity of 100 records. We place the pointer of the buffer at the end.</li>
+
+            <li>We make a loop from 0 to the number of records in the file. The number of records is computed as <code>fileSize / RECORD_SIZE</code>.</li>
+            <ul>
+                <li>If the buffer pointer is at the end, we clear the buffer and read more that from the file</li>
+                <li>We read the record from the buffer and print it.</li>
+            </ul>
+
+        </ul>
+
+        <pre>
+    try (
+            RandomAccessFile raf = new RandomAccessFile("prices.mdb", "r");
+            FileChannel channel = raf.getChannel()
+    ) {
+        <b>ByteBuffer buf = ByteBuffer.allocate(RECORD_SIZE * BUFFER_SIZE);
+        buf.position(buf.capacity());</b>
+
+        <b>long size = channel.size() / RECORD_SIZE;</b>
+
+        for (int i = 0; i &lt; size; i++) {
+            <span class="mfg-comment">// if the buffer pointer is at the end it means the whole buffer
+            // was printed, then load more records from the file into the
+            // buffer</span>
+            <b>if (buf.position() == buf.capacity()) {
+                buf.rewind();
+                channel.read(buf);
+                buf.rewind();
+            }</b>
+
+            <span class="mfg-comment">// read the record</span>
+            <b>int time = buf.getInt();
+            int price = buf.getInt();</b>
+
+            out.println("read [" + time + ", " + price + "]");
+        }
+    }    
+        </pre>
+        <p>The other important test, and probably the must important, is the search of values. Usually this is implemented by the database systems with balanced tree strucutres and algorithms. But for us it was not needed because in our domain, in all cases the searches are performed on time based values, and these values are always sorted, for that reason, with a binary search algorithm we get a very competitive performance at the same time we keep the data format "stupid". Here again we take advantage of the nature of our data domain:</p>
+
+        <pre>
+    <span class="mfg-comment">// This code is an adaptation of Arrays.binarySearch().
+    // "time" is the key value.</span>
+    public long indexOf(int time) {
+        try (
+            RandomAccessFile raf = new RandomAccessFile("prices.mdb", "r");
+            FileChannel channel = raf.getChannel()
+        ) {    
+            <span class="mfg-comment">// search in the range from index "low" to "high"</span>
+            long low = 0;
+            long high = <b>channel.size() / RECORD_SIZE;</b>
+
+            ByteBuffer buf = <b>ByteBuffer.allocate(RECORD_SIZE)</b>;
+
+            while (low &lt;= high) {
+                long mid = (low + high) &lt;&lt;&lt; 1;
+
+                <b>channel.position(mid * RECORD_SIZE);
+                buf.rewind();
+                channel.read(buf);
+                buf.rewind();</b>
+
+                <b>long midVal = buf.getInt();</b>
+
+                if (midVal &lt; time) {
+                    low = mid + 1;
+                } else if (midVal &gt; time) {
+                    high = mid - 1;
+                } else {
+                    <span class="mfg-comment">// key found</span>
+                    return mid;
+                }
+            }
+            <span class="mfg-comment">// key not found</span>
+            return -(low + 1);
+        }        
+    }
+            </pre>
+
+        <h3 id="intro-utopy">The MDB utopy</h3>
+        <p>
+            After run a test like that one above -but with much more data-, we realized that it is possible to develop a tool to outperform the SQL systems we was using in MFG to store the financial data. The reason is that SQL systems are general purpose software, they use complex structures like B-Tree to build indexes, they have data contraints etc... but in MDB the structure is the simpler you can imagine and there is not need for build indexes, cause it is assumed the data is added in order so a binary search algorithm is enough to perform fast searches.
+        </p>
+        <p>
+            Then, we proved our concept with hand-written code. The next step was to develop a library to handle the MDB files, but the performance was not good compared with the hand-written code. We realized that when you manage the files with a library, you should store in the file some metadata to describe the structure of the record, for example the name, the type, the order of the record fields etc... So the way you have to read and write the file is described in that metadata, and should be used by the library each time it performs an operation. We realized this "interpretation" effort affected the performance (in addition to the "excess" of polymorfic calls common in object-oriented libraries).
+        </p>
+        <p>
+            So we had two solutions, improve the library algorithms and design, or do something very different. We choose the second: we developed a compiler. If the hand-written code performs so good, then what we did was to parse a database schema and generate a hand-written code. The code we used in the prove of concept follows a pattern, for that reason we said it is possible to program a tool to generate a code like that.
+        </p>
+        <p>The result was great. The generated code performed as well as the hand-written test, and compared with the library, it also added the benefice of the static type checking. At the end we got a tool that performs great but also is very easy to use and protects the developer from certain errors inherents to JDBC like API, like a misspelled column name etc...</p>
+        <p>
+            Sure, the tool we use now is much more than that code we wrote as prove of concept. In MDB there are thread synchronization, some transaction support, different store modes, like a complete in memory database and other features. The code you get after compile the database schema differs from the initial hand-written code, but yet we commit to the same principle of generate a code optimized for the problem in question, and readable enough to be extended by the developer, it is not like ANTLR or YACC, you can understand it :-)
+        </p>
+
+
+
+
+
+
+        <h2 id="intro-doc">Documentation</h2>
+        <p>You can find a detailed documentation on the Javadoc of the MDB classes, together with the class source, which is very helpfull in the "demos" package. This documentaion is oriented to help the user in the common use cases of each element, but also it gives all the technical details needed to do the best use of MDB.</p>
+        <p>We recommend to start reading the Javadoc of the main packages of MDB. In addition we provide together with MDB a set of demos for a better illustration of the concepts. Let's start with it:</p>
+        <ul >
+            <li><a href="org/mfg/mdb/compiler/package-summary.html">MDB Compiler</a>
+            </li>
+            <li><a href="org/mfg/mdb/runtime/package-summary.html">MDB Runtime</a>
+            </li>
+            <li><a href="org/mfg/mdb/demo/package-summary.html">MDB Demos</a>
+            </li>
+        </ul>
+</body>
+
+</html>

@@ -1,0 +1,59 @@
+	/**
+	 * $tableName$'s meta-data: column names.
+	 */
+	public static final String[] COLUMNS_NAME = {
+		"$col.getName()$",// for (Column col : table) %
+	};
+	
+	/**
+	 * $tableName$'s meta-data: column Java types.
+	 */
+	public static final Class<?>[] COLUMNS_TYPE = {
+		$col.getType().getJavaType().getCanonicalName()$.class,// for (Column col : table) %
+	};
+	
+	/**
+	 * $tableName$'s meta-data: column Java types size (in bytes).
+	 */
+	public static final int[] COLUMNS_SIZE = { 
+		$col.getType().getSize()$, // for(Column col : table) %
+	};
+
+	/**
+	 * $tableName$'s meta-data: virtual column flags.
+	 */
+	public static final boolean[] COLUMNS_IS_VIRTUAL = { 
+		$col.isVirtual()$, // for(Column col : table) %
+	};
+
+	/**
+	 * $tableName$'s meta-data: column byte-offset.
+	 */
+	public static final int[] COLUMN_OFFSET = {  
+// for (Column col : table) {
+		$col.getOffset()$, 
+//}
+	};
+	
+	/**
+	 * $tableName$'s meta-data: size of the record, in bytes.
+	 */
+	public static final int RECORD_SIZE = $table.getRowSize()$;
+	
+//for(int z = 0; z < table.size(); z++) {
+//Column col = table.get(z);
+	/**
+	* $col.getName()$'s meta-data: index in a record.
+	*/	
+	public static final int COLUMN_$col.getName().toUpperCase()$ = $z$;
+//}	
+
+	/**
+	 * $tableName$'s meta-data: UUID used in schemas.
+	 */
+	public static final String TABLE_ID = "$table.getUUID().toString()$";
+	
+	/**
+	 * $tableName$'s meta-data: signature used to check schema changes.
+	 */ 
+	public static final String TABLE_SIGNATURE = "$table.computeSignature()$";

@@ -1,0 +1,10 @@
+#mya:print sb.append(@);	
+	private long modificationToken = 0;
+
+	public void modified() {
+		modificationToken++;
+	}
+
+	public long getModificatonToken() {
+		return modificationToken;
+	}

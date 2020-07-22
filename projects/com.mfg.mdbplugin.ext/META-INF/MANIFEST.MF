@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: MDB Compiler MFG Extension
+Bundle-SymbolicName: com.mfg.mdbplugin.ext;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.mfg.mdbplugin.ext.MDBPluginExt
+Bundle-Vendor: MFG
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.mfg.mdb.compiler,
+ org.mfg.mdb.runtime,
+ org.mfg.mdbplugin,
+ org.mfg.mya
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
+Export-Package: com.mfg.mdbplugin.ext

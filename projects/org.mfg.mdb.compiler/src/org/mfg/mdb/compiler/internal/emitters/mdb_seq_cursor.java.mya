@@ -1,0 +1,270 @@
+	/**
+	 * <p>
+	 * This class provides a sequential cursor API.
+	 * </p>
+	 * <p>
+	 * This cursor is the basic, faster and more controlled way to retrieve sequential
+	 * data, it is used internally by other elements like the "select" methods.
+	 * </p>
+	 * <p>
+	 * The common way to use a sequential cursor is:
+	 * </p>
+	 * 
+	 * <pre>
+	 * $tableName$MDB mdb = ...;
+	 * Cursor c = mdb.cursor(...); 
+	 * while(c.next()) {
+	 *     doSomething(c.$table.get(0).getName()$); // if (!table.isEmpty()) %
+	 * }
+	 * c.close();
+	 * </pre>
+	 * <p>
+	 * A cursor contains the same "column fields" of a record, 
+	 * when the <code>next()</code> method is called, the cursor
+	 * "column fields" are updated.
+	 * </p>
+	 * <p>
+	 * Warning: remember always to close the cursor, a common mistake
+	 * is to try to delete a database when there are opened cursors: 
+	 * an open cursor blocks a file (at least in Windows).  
+	 * </p>
+	 */
+	public final class Cursor implements ISeqCursor<Record> {
+		private long _stop;
+		private long _row;
+		private ByteBuffer _buffer;
+		FileChannel _channel;
+		private RandomAccessFile _raf;
+		private long _len;
+		private boolean _open;
+//	if (hasArray) {	
+		private RandomAccessFile _arrayRaf;
+		private FileChannel _arrayChannel;
+//	}
+//		for (Column col : table) {
+//		if (col.isVirtual()) {
+		/** Virtual field. Formula: <code>$col.getFormula()$</code>*/		
+//		}
+		public $col.getType().getJavaType().getSimpleName()$ $col.getName()$; /* $col.getIndex()$ */
+//	}	
+		
+		/**
+		* Cursor constructor.
+		*/
+		Cursor(RandomAccessFile raf, FileChannel channel, long start, long stop, int bufferSize) throws IOException {
+			super();
+			_openCursorCount.incrementAndGet();
+			_open = true;
+			_len = _size;
+			_stop = Math.min(stop, _len - 1);
+			_row = start;
+			if (!_memory) {
+				_raf = raf;
+				_channel = channel;
+				_channel.position(start * $rowSize$);
+				_buffer = ByteBuffer.allocate(bufferSize * $rowSize$);
+				_buffer.position(_buffer.capacity());
+//		if (hasArray) {			
+				_arrayRaf = new RandomAccessFile(getArrayFile(),"rw");
+				_arrayChannel = _arrayRaf.getChannel();
+//		}
+			}
+			_session.cursorCreated(this);
+		}
+		
+		@Override
+		public void reset(long start, long stop) throws IOException {
+			if (!_open) throw new ClosedCursorException(this);
+			
+			long start2 = start < 0? 0 : start;
+			_len = _size;
+			_stop = stop < start2? start2 : Math.min(stop, _len - 1);
+			_row = start;
+			if (!_memory) {
+				synchronized (this) {
+					_channel.position(start * $rowSize$);
+					_buffer.position(_buffer.capacity());
+				}
+			}
+		}
+			
+		/**
+		* Fetch the data and move the cursor to the next record.
+		*/
+		@Override
+		public synchronized boolean next() throws IOException {
+			/# if (!_open) throw new ClosedCursorException(this);
+			
+			if (_row > _stop || _len == 0) return false;
+			
+			if (!_basic) {
+				_readLock.lock();	
+				try {
+					if (_rbufSize > 0 && _row >= _rbufPos) {
+						Record r;
+						r = _rbuf[(int) (_row - _rbufPos)];
+//	for (Column col : table) {
+//		String name = col.getName();					
+						this.$name$ = r.$name$;
+//	}					
+						_row ++;
+						return true;	
+					}
+				} finally {
+					_readLock.unlock();
+				} 
+			}
+			
+			if (!_memory) {
+				if (_buffer.position() == _buffer.capacity()) {
+					_buffer.rewind();
+					_channel.read(_buffer);
+					_buffer.rewind();
+				}
+				
+	// 	for(Column col : table) {
+	//		if (!col.isVirtual()) {
+	//			Type type = col.getType();			
+	//			boolean isString = type == Type.STRING;
+	//			String colName = col.getName();			
+	//			String varName = (isString? "__" : "this.") + colName;
+	//			if (type.isArray()) {
+	//				Type elementType = col.getType().getElementType();
+	//				int elementSize = elementType.getSize();			
+				{
+					long start = _buffer.getLong();
+					int byteLen = _buffer.getInt();
+					ByteBuffer arrayBuf = ByteBuffer.allocate(byteLen);
+					_arrayChannel.read(arrayBuf, start);
+					arrayBuf.rewind();
+	//				if (isString) {
+					byte[] $varName$ = new $elementType.getJavaType().getCanonicalName()$[byteLen / $elementSize$]; 
+	//				} else {
+					$varName$ = new $elementType.getJavaType().getCanonicalName()$[byteLen / $elementSize$]; 
+	//				}
+					for(int i = 0; i < $varName$.length; i++) {
+						$varName$[i] = arrayBuf.get() == 0? false : true; // if (elementType == Type.BOOLEAN) %
+						$varName$[i] = arrayBuf.get$elementType.getGetName()$(); // else %
+					}
+					this.$colName$ = new String($varName$); // if (isString) %
+				}
+	//			} else { /* not array */
+	//				if (type == Type.BOOLEAN) {
+				$varName$ = _buffer.get() == 0? false : true;
+	//				} else {
+				$varName$ = _buffer.get$type.getGetName()$();
+	//				}			
+	//			}			
+	//		} /* not virtual */		
+	// 	} /* for column */
+	//	if (hasVirtualColumns) {
+				/* Virtual fields */
+	//		for(Column col : table) {
+	//			if (col.isVirtual()) {
+	//				String expr = expandExpr(col.getFormula(), "$$", "this", "$pos$", "_row").trim();				
+					this.$col.getName()$ = $expr$;
+	//			}		
+	//		}			
+	//	}			
+				_row ++;
+			}
+			return true;
+		}
+		
+		
+		/*
+		* Close the cursor. Do that when the cursor is not needed anymore.
+		*/
+		@Override
+		public synchronized void close() throws IOException {
+			if (!_open) return;
+			_open = false;
+			_openCursorCount.decrementAndGet();
+			assert _openCursorCount.get() >= 0;
+			
+			if (!_memory) {
+				_raf.close();
+				_arrayRaf.close(); // if (hasArray) %
+			}
+			_session.cursorClosed(this);
+		}
+		
+		@Override
+		protected void finalize() {
+			try {
+				close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		/**
+		* To check if the cursor is open.
+		*/	
+		@Override
+		public synchronized boolean isOpen() {
+			return _open;
+		}
+		
+		/**
+		* The current position of the cursor.
+		*/	
+		@Override
+		public long position() {
+			return _row;
+		}
+		
+		/**
+		* Create a record with the cursor data.
+		* You can use this method if you need to store the data in a collection.
+		*/
+		@Override
+		public Record toRecord() {
+			Record r = new Record();
+//	for(Column col : table) {
+//		String name = col.getName();
+//		if (col.getType().isArrayButNotString()) {
+			r.$name$ = this.$name$ == null? null : java.util.Arrays.copyOf(this.$name$, this.$name$.length); 	
+//		} else {
+			r.$name$ = this.$name$;
+//		}			
+//	}				
+			return r;
+		}
+		
+		/**
+		* The associated MDB instance. 
+		*/
+		@Override
+		public $tableName$MDB getMDB() {
+			return $tableName$MDB.this;
+		}
+	}
+	
+	/**
+	* Create a cursor to iterate from position <code>start</code> to <code>stop</code>.
+	*
+	* @param start 
+	* 			Start position.
+	* @param stop 
+	* 			Stop position.
+	*/
+	@SuppressWarnings("resource")	
+	@Override
+	public Cursor cursor(long start, long stop) throws IOException {
+		if (_memory) {
+			return new Cursor(null, null, start, stop, _bufferSize);
+		}
+		RandomAccessFile raf = new RandomAccessFile(getFile().getAbsolutePath(), "r");
+		return new Cursor(raf, raf.getChannel(), start, stop, _bufferSize);
+	}
+	
+	@Override
+	public Cursor cursor(long start) throws IOException {
+		return (Cursor) super.cursor(start);
+	}
+	
+	@Override
+	public Cursor cursor() throws IOException {
+		return (Cursor) super.cursor();
+	}

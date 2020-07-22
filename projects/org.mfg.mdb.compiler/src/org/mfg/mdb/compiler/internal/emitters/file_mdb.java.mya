@@ -1,0 +1,94 @@
+#mya:print emitter.print(@);
+//package org.mfg.mdb.compiler.internal.emitters;
+//
+//import org.mfg.mdb.compiler.*;
+//import static org.mfg.mya.Printer.*;
+//
+//import java.io.IOException;
+//
+// /**
+//  * Generator of the session Java file. 
+//  * @author arian
+//  *
+//  */
+//public class MDBClassGenerator implements IExtensionTargets {
+//	/**
+//	 * The emitter to use.
+//	 */
+//	public OpenPrinter emitter;
+//
+//	/**
+//	  * Schema
+//	  */
+//	public Schema schema;
+//	/**
+//	  * Biffer size
+//	  */
+//	public int bufferSize;
+//
+//	/**
+//	  * Table
+//	  */
+//	public Table table;
+//
+//
+//	/**
+//	  * The name of the package 
+//	  */
+//	public String pkgname;
+//
+//	/*
+//	 * \@throws IOException I/O error.
+//	 */
+//	private void userText(String openTag, String closeTag, String def) throws IOException {
+//		emitter.userText(openTag, closeTag, def);
+//	}
+//
+//	private void emitExt(String extPoint) {
+//		emitter.emitExt(extPoint, table);
+//	}
+//
+//	/**
+//	 * <p>
+//	 * This is not more than other way to replace some texts in a string. The
+//	 * name "expandExpr" comes from the fact that this is used mainly to expand
+//	 * a column formula {@link Column#getFormula()} into a real Java expression.
+//	 * </p>
+//	 * <p>
+//	 * For example:
+//	 * 
+//	 * <pre>
+//	 * expandExpr(&quot;$$.price * $pos$&quot;, &quot;$$&quot;, &quot;this&quot;, &quot;$pos$&quot;, &quot;_row&quot;);
+//	 * </pre>
+//	 * 
+//	 * Is the same of:
+//	 * 
+//	 * <pre>
+//	 * &quot;$$.price * $pos$&quot;.replace(&quot;$$&quot;, &quot;this&quot;).replace(&quot;$pos$&quot;, &quot;_row&quot;);
+//	 * </pre>
+//	 * 
+//	 * </p>
+//	 * 
+//	 * @param expr
+//	 *            The expression with the "keywords".
+//	 * @param attrs
+//	 *            A map of the keywords with the real values.
+//	 * @return The expression after the expansion.
+//	 */
+//	private static String expandExpr(final String expr, final String... attrs) {
+//		String expand = expr;
+//		for (int i = 0; i < attrs.length / 2; i++) {
+//			final String key = attrs[i * 2];
+//			final String val = attrs[i * 2 + 1];
+//			expand = expand.replace(key, val);
+//		}
+//		return expand;
+//	}
+//
+//	/**
+//	 * \@throws IOException If there is any I/O error.
+//	 */
+//	public void run() throws IOException {
+#mya:import mdb.java.mya
+//	}
+//}

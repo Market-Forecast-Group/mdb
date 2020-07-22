@@ -1,0 +1,236 @@
+Things that I want to do:
+
+- La posibilidad de nombrar a los cursores, de esta forma los mensajes de depuracion son mas efectivos.
+Quizas la session deberia tener una lista de todos los cursores, asi se puede
+saber cuales son aquellos abiertos.  
+
+- Keep an _empty field updated, and use it on read operations to check if the db is empty.
+
+- Utilizar constantes numericas en mdb y no los literales (Lino).
+
+- Check if size() can be implemented as _rbufPos + _rbufSize.
+
+- Assertions to check thread access.
+
+- The truncate() method can be transferred to the MDB runtime.
+
+- Crear un proyecto com.example.mdb, puesto que el codigo generado tiene unos javadocs bien utiles.
+
+- MDB Snippet view: I am thinking to provide the mdbplugin with a view with an overview of all the schemas and tables, and the API for each table.
+Something like view to guide a developer with the available features. Like to group the MDB API methods.
+Also this can help to create Snippets for real cases, because it contains the schema information.
+snippets.
+
+- Together with the Open All Schemas option we can add a Compile All Shemas options. In this way we do not have to open all the schemas.
+
+- Probably is good to make Eclipse to format the java classes after been generated.
+
+- The better is to define the default buffer size in the table definition.
+
+- Probably there are a lot of code that can be moved from the generated classes to the runtime. For example, the "select" methods can be
+refactored to receive the cursor to run.
+
+- I have to improve the replace() method. Right now it creates a new RAF and that's not good when there are a lot of replacements, 
+like in an auto-strategy run. 
+A better implementation should be to use one RAF and buffer and synchronize the replacements.
+Probably the best is to add a replace method to the appender, so we can use the same RAF. 
+
+- Improve the buffer. Right now it is an array of records, but Lino proposed to use one array per field, it improve memory and garbage collector.
+
+- Improve the sselect queries. This is the mail about it:
+		"...Finally my chicken mind understand why the value 30,000 provides a closer picture than 3,000. If it is a dog, it bites me. So many years living in the darkness... 
+		The thing is that is true that with 3,000 is enough to fill all the X spaces with a dot, but it does not have to be enough to fill all the Y spaces.
+
+		So, an optimized algorithm should ensure that all the spaces (X and Y) are filled with a minimus of prices. 
+		We can develop it, but it will be too slow because it requires a full scan of the prices. 
+		Or... thinking it better, is very possible that with some effort we can target that problem in the database. 
+		I think it is something I can do in the future when the issues list get shorter..."  
+
+
+- Will be very good to have a more complex "where" feature. Right now the only criteria used to select one row or not is a range criteria.
+But we can provides other criterias like: 
+	col1 <op> value
+	col2 <op> col1
+	
+	<op> is ==, !=, <, >, <=, >=
+	
+Then the user can write for each schema the criterias are common in that schema. In that way, will be generated methods to include the conditions.
+For example:
+
+	closedTrades: 
+		"isClosed=true"
+
+It will generate methods like:
+	select_where_closedTrades_and_timeIn(start, stop)
+	first_closedTrade()
+	last_closedTrade()
+	etc...
+
+Even, the user can write Java custom operators.
+
+The approach of this is that the user does not need to filter the data that is retrieved by MDB.
+IMPORTANT: See the IExecutionModel equity methods to get a better understanding of this. We want to use this feature there.
+
+
+- Other thing I was thinking is to make an inmplementation of a fully in memory db but flushing the data to the file in other thread. 
+To implements this will be good to see the avilable implementations of dynamic arrays. I think something like a tree of 2 levels will be really good.
+
+- Improvement of the binary search. I think a very good improvement for charts is to add keep the last found position and use it in the next searchs. 
+We can have a flag START_SEARCH_NEAR in the MDB classes. But maybe this is not the best solution because maybe many process will request for a search but each process has his own search space.
+So, the best is to add to the search methods a new parameter (lookHere) that is the index where to start searching.	
+
+- Add tags to the columns. For example, I we can use for MFG the tag "price" and the "tag" time. 
+Tags can be used also to provide certain display format, etc..
+
+- Regarding formats, we can assign to each column a format, to use in automatic browsers (number formats, string formats, date formats, etc..).
+
+- Different tables stored into one file of a fixed length.
+	This can be useful when you know the exact number of objects that will be stored in your tables. 
+	Then in just one file a fixed-length segment of that file is reserved for each table.
+	For example, the first thing you can imagine is that one time you generated a database (of many files) 
+	and you know this database will not grow, you can move all the files to just one big file.
+
+	Some implementation notes.
+
+	The regular implementation of a mdb-session maps a file (or file path) to a MDB instance that manages a full file.
+	But in this case, we an mdb-session can map a file to a MDB instance that manages just a segment of the big file.
+	In this way you can use the same api for both implementations.   
+
+- Views
+	It means that we do not read the whole data of a record, just a few predefined (in design) fields (view).
+	These is very useful because in case we are interested in some fields we do not have to load all the fields data.
+	
+	table("Tick")
+	column("time", LONG)
+	column("price", DOUBLE)
+	column("isReal", BOOLEAN)
+	view("Point", "time", "price")
+	
+	It will generates classes:
+	
+	class Record {
+		long time;
+		double price;
+		boolean isReal;
+	}
+	
+	class PointRecord {
+		long time;
+		double price;
+		
+		PointRecord toRecord() {}
+	}
+	
+	class Cursor extends Record {
+	}
+	
+	class PointCursor extends PointRecord {
+	}
+	
+- Improve index with a first approximation:
+	mdb.indexOfTime(time, indexApproximation)
+
+- Implements the clients in C/JNI (I did, but it is not better. I should try again. The other problem is the littleEndian and type size compatibility. In java those things are multiplatform, see ByteBuffer)
+
+========================
+(Done) - Remove the EmptyMDBException, in any case it should send IndexOutOfBoundsException.
+(Done) - Actualmente el metodo replace() recibe un record, pero seria de mucho provecho uno que reciba "las columnas" como argumentos,
+puesto que crear un record es una operacion mas costosa. 
+
+(Done) - We should provide a way of remove the local-thread cursors of a an MDB instance,
+they are used internally by MDB by methods like record() and indexOf(),
+but there are cases where we want to read eventually so we do not need to keep
+the cursors open. We can write a method:
+
+mdb.forgetThread()
+
+and in the session a method to detach an mdb:
+
+session.disconnect(mdb);
+
+
+(Done) - Throw an EmptyMDBException when read methods try to read on empty databases.
+
+(Done) - Improve the record() method to re-use the RAF when it is called by the same thread.  
+
+(Done) - The same idea of the thread-raf map can be used by the cursors.
+
+
+(Done) - Really, sparse cursors are not more than a specific type of RandomCursor, 
+so we can remove the sparse cursors. So we can use a random cursor in the 
+sparse_select() methods. 
+
+
+(Done) - Full in-memory db. Will be very pretty to add a fully in-memory db and also add the ability to flush the entry memory db to a file.
+	Now there is multiple solutions.
+	a) Generates an interface, for example, IPriceMDB and two implementations PriceMDB and PriceMemMDB.
+	b) Just add more code to the current generated MDB class to handle the in-memory case.
+
+
+
+(Done) - New RandomAccesCursor:
+	cursor.position(10)
+	cusor.read()
+	
+- Improve cursor with:
+	cursor.isStopped() 
+	**I do not understand this, I forgotten why I wrote it :(
+
+
+(Done) - Add argument validation (like in record(index)) for a better error detection.
+
+(Done) - Unsafe appender and cursors.
+Unsafe means do not use any locking strategy. The good thing with this is they will run faster, the bad
+thing is that the developer should ensure that only one cursor or an appender will be used at the same time.  
+
+
+(Done) - Add a new method to count the objects in a range. We was using indexOf(upper) - indexOf(lower), but will be pretty to have this feature. 
+
+(Done) - Connection type: it is, when you connect to an mdb a connection mode should be gived. Connection modes are:
+	READ_ONLY 
+		- Report error if the file does not exist or an appender is requested.
+	CREATE_NEW
+		- Report error if the file exists, it creates a new one.
+	READ_WRITE
+		- Report error if the file does not exists.
+	IF_NEW_CREATE
+		- Unrestricted.
+	The problem with this is that the mdb connections are chached in the session. I have to think about it.
+	
+(Done) - Improve the index methods to allow the user to set the search-space. For example, I want to find the index of an element placed between position A and B:
+	mdb.indexOfElement(element, A, B); 
+
+(Done) - Improve index taking as first pivot the first element of the memory buffer. 
+	(This is not needed, since we added memory buffer it is what we did)	
+
+(Done, see validate() method)- Add a checkConstraints() method. It will check if all the ordered cols has ordered values.
+
+(Done)- Improve MDB with:
+	Record r = mdb.record(pos) // it return the record at position pos
+
+(Done) - Improve information
+	cursor.name
+	cursor.mdb
+	appender.name
+	appender.mdb
+	mdb.name
+	mdb.file
+
+
+- (Done) Implements "appenders share his buffer with cursors"
+With this feature is not needed to force flush the buffer in real-time 
+	
+- (Done) Structure
+	- New: allow save fixed-length-arrays
+	- New: allow save variable-length-arrays. In this case the database is not indexable.
+	
+- Management
+	(Done, see MDBSession) 
+	a) generate a resource manager
+	b) something to see and close resources
+	
+
+- Schema Editor
+	- (Done) New, merge different schemas
+	- (Done) New, generates java build script
+	- (Done) Serialize schemas to JSON
